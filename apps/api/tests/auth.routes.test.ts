@@ -60,17 +60,50 @@ describe('auth routes', () => {
     // exercised by every other test in this file).
     const isolatedApp = createApp(testPrisma);
 
-    const spy = vi
-      .spyOn(testPrisma.user, 'findUnique')
-      .mockRejectedValueOnce(new Error('simulated DB failure'));
+    // NOTE: vi.spyOn(...).mockRestore() does not work reliably against
+    // Prisma Client's model delegates (e.g. testPrisma.user) — Prisma
+    // memoizes each model's methods as own properties on first access, and
+    // vi's mockRestore leaves the property `undefined` afterward instead of
+    // restoring the original function (verified independently while
+    // authoring this test). So the original is saved and reassigned by
+    // hand instead of relying on vi.spyOn/mockRestore.
+    const originalFindUnique = testPrisma.user.findUnique.bind(testPrisma.user);
+    testPrisma.user.findUnique = vi.fn().mockRejectedValueOnce(new Error('simulated DB failure'));
 
-    const res = await request(isolatedApp)
-      .post('/api/auth/login')
-      .send({ email: 'a@b.com', password: 'password123' });
+    try {
+      const res = await request(isolatedApp)
+        .post('/api/auth/login')
+        .send({ email: 'a@b.com', password: 'password123' });
 
-    expect(res.status).toBe(500);
-    expect(res.body.error).toBe('Internal server error');
+      expect(res.status).toBe(500);
+      expect(res.body.error).toBe('Internal server error');
+    } finally {
+      testPrisma.user.findUnique = originalFindUnique;
+    }
+  });
 
-    spy.mockRestore();
+  it('returns 500 instead of crashing when requireAuth hits an unexpected error', async () => {
+    // Isolated app + agent, same reasoning as the previous test: avoid
+    // sharing the rate limiter counter with other tests in this file.
+    const isolatedApp = createApp(testPrisma);
+    const agent = request.agent(isolatedApp);
+
+    await agent.post('/api/auth/register').send({ email: 'a@b.com', password: 'password123' });
+
+    // getSession() -> prisma.session.findUnique is on the requireAuth path
+    // exercised by GET /api/auth/me; make it reject once to simulate a
+    // transient DB failure inside the auth middleware itself. Manual
+    // save/restore (not vi.spyOn/mockRestore) for the same reason as above.
+    const originalFindUnique = testPrisma.session.findUnique.bind(testPrisma.session);
+    testPrisma.session.findUnique = vi.fn().mockRejectedValueOnce(new Error('simulated DB failure'));
+
+    try {
+      const res = await agent.get('/api/auth/me');
+
+      expect(res.status).toBe(500);
+      expect(res.body.error).toBe('Internal server error');
+    } finally {
+      testPrisma.session.findUnique = originalFindUnique;
+    }
   });
 });
