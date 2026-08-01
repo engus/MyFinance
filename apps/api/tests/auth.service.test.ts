@@ -48,4 +48,27 @@ describe('auth.service', () => {
       InvalidCredentialsError
     );
   });
+
+  it('takes comparable time for unknown-email and wrong-password rejections (timing side-channel)', async () => {
+    await registerUser(testPrisma, 'a@b.com', 'password123');
+
+    const start1 = performance.now();
+    await expect(loginUser(testPrisma, 'a@b.com', 'wrong-password')).rejects.toThrow(
+      InvalidCredentialsError
+    );
+    const wrongPasswordDuration = performance.now() - start1;
+
+    const start2 = performance.now();
+    await expect(loginUser(testPrisma, 'nobody@b.com', 'wrong-password')).rejects.toThrow(
+      InvalidCredentialsError
+    );
+    const unknownEmailDuration = performance.now() - start2;
+
+    // Both branches perform an argon2 verify, so neither should be a near-instant
+    // short-circuit, and the unknown-email path shouldn't be wildly faster than the
+    // wrong-password path (which would reveal that emails can be enumerated by timing).
+    // A generous 50% floor and order-of-magnitude ceiling avoid CI/DB jitter flakiness.
+    expect(unknownEmailDuration).toBeGreaterThanOrEqual(wrongPasswordDuration * 0.5);
+    expect(unknownEmailDuration).toBeLessThanOrEqual(wrongPasswordDuration * 5);
+  });
 });
