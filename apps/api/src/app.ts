@@ -18,6 +18,14 @@ const credentialsSchema = z.object({
   password: z.string().min(8),
 });
 
+function asyncHandler(
+  fn: (req: express.Request, res: express.Response) => Promise<void>
+) {
+  return (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    fn(req, res).catch(next);
+  };
+}
+
 export function createApp(prisma: PrismaClient) {
   const app = express();
   app.use(express.json());
@@ -42,7 +50,7 @@ export function createApp(prisma: PrismaClient) {
     });
   }
 
-  app.post('/api/auth/register', authLimiter, async (req, res) => {
+  app.post('/api/auth/register', authLimiter, asyncHandler(async (req, res) => {
     const parsed = credentialsSchema.safeParse(req.body);
     if (!parsed.success) {
       res.status(400).json({ error: parsed.error.flatten() });
@@ -60,9 +68,9 @@ export function createApp(prisma: PrismaClient) {
       }
       throw err;
     }
-  });
+  }));
 
-  app.post('/api/auth/login', authLimiter, async (req, res) => {
+  app.post('/api/auth/login', authLimiter, asyncHandler(async (req, res) => {
     const parsed = credentialsSchema.safeParse(req.body);
     if (!parsed.success) {
       res.status(400).json({ error: parsed.error.flatten() });
@@ -80,17 +88,22 @@ export function createApp(prisma: PrismaClient) {
       }
       throw err;
     }
-  });
+  }));
 
-  app.post('/api/auth/logout', requireAuth(prisma), requireCsrf, async (req, res) => {
+  app.post('/api/auth/logout', requireAuth(prisma), requireCsrf, asyncHandler(async (req, res) => {
     await destroySession(prisma, req.cookies.sid);
     res.clearCookie('sid');
     res.status(204).send();
-  });
+  }));
 
-  app.get('/api/auth/me', requireAuth(prisma), async (req, res) => {
+  app.get('/api/auth/me', requireAuth(prisma), asyncHandler(async (req, res) => {
     const user = await prisma.user.findUniqueOrThrow({ where: { id: req.userId! } });
     res.json({ id: user.id, email: user.email });
+  }));
+
+  app.use((err: unknown, req: express.Request, res: express.Response, next: express.NextFunction) => {
+    console.error(err);
+    res.status(500).json({ error: 'Internal server error' });
   });
 
   return app;

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterAll } from 'vitest';
+import { describe, it, expect, beforeEach, afterAll, vi } from 'vitest';
 import request from 'supertest';
 import { testPrisma, truncateAll } from './helpers/db';
 import { createApp } from '../src/app';
@@ -52,5 +52,25 @@ describe('auth routes', () => {
       .post('/api/auth/register')
       .send({ email: 'not-an-email', password: 'short' });
     expect(res.status).toBe(400);
+  });
+
+  it('returns 500 instead of crashing when an unexpected error occurs in an async handler', async () => {
+    // Use a freshly-created app so this test's request doesn't get counted
+    // against the shared `app` instance's rate limiter (which is also
+    // exercised by every other test in this file).
+    const isolatedApp = createApp(testPrisma);
+
+    const spy = vi
+      .spyOn(testPrisma.user, 'findUnique')
+      .mockRejectedValueOnce(new Error('simulated DB failure'));
+
+    const res = await request(isolatedApp)
+      .post('/api/auth/login')
+      .send({ email: 'a@b.com', password: 'password123' });
+
+    expect(res.status).toBe(500);
+    expect(res.body.error).toBe('Internal server error');
+
+    spy.mockRestore();
   });
 });
