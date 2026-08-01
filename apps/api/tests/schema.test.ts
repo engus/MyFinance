@@ -38,4 +38,26 @@ describe('schema', () => {
       })
     ).rejects.toThrow();
   });
+
+  it('rejects deleting an account that still has entries pointing at it', async () => {
+    const user = await testPrisma.user.create({ data: { email: 'e@f.com', passwordHash: 'h' } });
+    const account = await testPrisma.account.create({
+      data: { userId: user.id, name: 'Card', kind: 'FINANCIAL', currency: 'USD' },
+    });
+    const tx = await testPrisma.transaction.create({
+      data: { userId: user.id, description: 'x', date: new Date() },
+    });
+    await testPrisma.entry.create({
+      data: {
+        transactionId: tx.id,
+        accountId: account.id,
+        amount: '10.00',
+        currency: 'USD',
+      },
+    });
+
+    await expect(
+      testPrisma.account.delete({ where: { id: account.id } })
+    ).rejects.toThrow();
+  });
 });
