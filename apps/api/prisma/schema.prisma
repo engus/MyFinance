@@ -1,0 +1,125 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum AccountKind {
+  FINANCIAL
+  ASSET
+}
+
+enum CategoryKind {
+  INCOME
+  EXPENSE
+}
+
+enum TransactionFrequency {
+  ONE_OFF
+  RECURRING
+}
+
+enum RecurrenceInterval {
+  WEEK
+  MONTH
+  QUARTER
+  YEAR
+  CUSTOM
+}
+
+enum ReconciliationMode {
+  AUTO
+  CONFIRM
+}
+
+model User {
+  id                 String             @id @default(uuid())
+  email              String             @unique
+  passwordHash       String
+  reconciliationMode ReconciliationMode @default(AUTO)
+  createdAt          DateTime           @default(now())
+  accounts           Account[]
+  categories         Category[]
+  transactions       Transaction[]
+  sessions           Session[]
+}
+
+model Session {
+  id        String   @id
+  userId    String
+  csrfToken String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Account {
+  id        String      @id @default(uuid())
+  userId    String
+  name      String
+  kind      AccountKind
+  currency  String
+  isSystem  Boolean     @default(false)
+  createdAt DateTime    @default(now())
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  entries   Entry[]
+
+  @@index([userId])
+}
+
+model Category {
+  id        String       @id @default(uuid())
+  userId    String
+  name      String
+  kind      CategoryKind
+  isSystem  Boolean      @default(false)
+  createdAt DateTime     @default(now())
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  entries   Entry[]
+
+  @@index([userId])
+  @@unique([userId, name])
+}
+
+model Transaction {
+  id          String                @id @default(uuid())
+  userId      String
+  description String
+  date        DateTime
+  frequency   TransactionFrequency  @default(ONE_OFF)
+  interval    RecurrenceInterval?
+  customDays  Int?
+  createdAt   DateTime              @default(now())
+  user        User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  entries     Entry[]
+
+  @@index([userId])
+}
+
+model Entry {
+  id            String      @id @default(uuid())
+  transactionId String
+  accountId     String?
+  categoryId    String?
+  amount        Decimal     @db.Decimal(18, 2)
+  currency      String
+  transaction   Transaction @relation(fields: [transactionId], references: [id], onDelete: Cascade)
+  account       Account?    @relation(fields: [accountId], references: [id])
+  category      Category?   @relation(fields: [categoryId], references: [id])
+
+  @@index([accountId])
+  @@index([categoryId])
+}
+
+model ExchangeRate {
+  id         String   @id @default(uuid())
+  fromSymbol String
+  toSymbol   String
+  rate       Decimal  @db.Decimal(18, 6)
+  fetchedAt  DateTime @default(now())
+
+  @@unique([fromSymbol, toSymbol])
+}
