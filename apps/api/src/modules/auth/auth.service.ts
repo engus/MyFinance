@@ -1,7 +1,7 @@
 import argon2 from 'argon2';
 import { PrismaClient } from '@prisma/client';
 import { createSession } from '../../lib/session';
-import { seedSystemCategories } from '../categories/categories.service';
+import { seedSystemCategories, seedDefaultCategories } from '../categories/categories.service';
 
 export class EmailAlreadyRegisteredError extends Error {}
 export class InvalidCredentialsError extends Error {}
@@ -21,6 +21,7 @@ export async function registerUser(prisma: PrismaClient, email: string, password
   const passwordHash = await argon2.hash(password, { type: argon2.argon2id });
   const user = await prisma.user.create({ data: { email, passwordHash } });
   await seedSystemCategories(prisma, user.id);
+  await seedDefaultCategories(prisma, user.id);
   const session = await createSession(prisma, user.id);
 
   return { user, session };

@@ -19,7 +19,7 @@ describe('auth.service', () => {
     expect(session.token).toBeTruthy();
 
     const categories = await testPrisma.category.findMany({ where: { userId: user.id } });
-    expect(categories).toHaveLength(2);
+    expect(categories).toHaveLength(12);
   });
 
   it('rejects registering the same email twice', async () => {
