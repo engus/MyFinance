@@ -70,4 +70,50 @@ describe('ledger.service', () => {
       })
     ).rejects.toThrow(InvalidEntryError);
   });
+
+  it('rejects an entry whose currency does not match its account currency', async () => {
+    const { user, category } = await seedUserWithAccountAndCategory();
+    const account = await testPrisma.account.create({
+      data: { userId: user.id, name: 'Euro card', kind: 'FINANCIAL', currency: 'EUR' },
+    });
+
+    await expect(
+      createTransaction(testPrisma, {
+        userId: user.id,
+        description: 'Bad currency',
+        date: new Date(),
+        entries: [
+          { accountId: account.id, amount: '10.00', currency: 'USD' },
+          { categoryId: category.id, amount: '-10.00', currency: 'USD' },
+        ],
+      })
+    ).rejects.toThrow(InvalidEntryError);
+  });
+
+  it('stores templateId on the created transaction when provided', async () => {
+    const { user, account, category } = await seedUserWithAccountAndCategory();
+
+    const template = await createTransaction(testPrisma, {
+      userId: user.id,
+      description: 'Template placeholder',
+      date: new Date(),
+      entries: [
+        { accountId: account.id, amount: '1.00', currency: 'USD' },
+        { categoryId: category.id, amount: '-1.00', currency: 'USD' },
+      ],
+    });
+
+    const occurrence = await createTransaction(testPrisma, {
+      userId: user.id,
+      description: 'Rent',
+      date: new Date(),
+      templateId: template.id,
+      entries: [
+        { accountId: account.id, amount: '-1000.00', currency: 'USD' },
+        { categoryId: category.id, amount: '1000.00', currency: 'USD' },
+      ],
+    });
+
+    expect(occurrence.templateId).toBe(template.id);
+  });
 });
