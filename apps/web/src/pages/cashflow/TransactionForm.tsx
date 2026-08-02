@@ -37,6 +37,11 @@ export function TransactionForm({
       return;
     }
 
+    if (amount.trim() === '' || !Number.isFinite(Number(amount))) {
+      setError('Введите корректную сумму');
+      return;
+    }
+
     const magnitude = Math.abs(Number(amount));
     const signedAmount = kind === 'EXPENSE' ? `-${magnitude}` : `${magnitude}`;
 

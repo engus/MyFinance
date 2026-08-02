@@ -3,7 +3,7 @@ import {
   EntryInput,
   assertEntriesTargetExactlyOne,
   assertEntriesBalance,
-  assertEntryCurrenciesMatchAccounts,
+  assertEntriesReferenceOwnedResources,
 } from '../ledger/ledger.service';
 
 export class TransactionNotFoundError extends Error {}
@@ -26,8 +26,9 @@ export async function createRecurringTemplate(
   prisma: PrismaClient,
   input: CreateRecurringTemplateInput
 ): Promise<Transaction> {
-  await assertEntryCurrenciesMatchAccounts(prisma, [
+  await assertEntriesReferenceOwnedResources(prisma, input.userId, [
     { accountId: input.accountId, amount: input.amount, currency: input.currency },
+    { categoryId: input.categoryId, amount: input.amount, currency: input.currency },
   ]);
 
   return prisma.transaction.create({
@@ -59,7 +60,7 @@ export async function listTransactions(
   userId: string,
   filters: ListTransactionsFilters = {}
 ): Promise<Transaction[]> {
-  const conditions: Prisma.TransactionWhereInput[] = [{ userId }];
+  const conditions: Prisma.TransactionWhereInput[] = [{ userId }, { isActive: true }];
 
   if (filters.frequency) {
     conditions.push({ frequency: filters.frequency });
@@ -133,7 +134,7 @@ export async function updateOneOffTransaction(
   if (transaction.frequency !== 'ONE_OFF') throw new NotAOneOffTransactionError();
 
   assertEntriesTargetExactlyOne(params.entries);
-  await assertEntryCurrenciesMatchAccounts(prisma, params.entries);
+  await assertEntriesReferenceOwnedResources(prisma, params.userId, params.entries);
   assertEntriesBalance(params.entries);
 
   await prisma.entry.deleteMany({ where: { transactionId: transaction.id } });

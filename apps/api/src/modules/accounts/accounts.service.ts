@@ -53,7 +53,10 @@ export async function deleteAccount(
   if (!account) throw new AccountNotFoundError();
 
   const entryCount = await prisma.entry.count({ where: { accountId: params.accountId } });
-  if (entryCount === 0) {
+  const templateCount = await prisma.transaction.count({
+    where: { templateAccountId: params.accountId, frequency: 'RECURRING' },
+  });
+  if (entryCount === 0 && templateCount === 0) {
     await prisma.account.delete({ where: { id: params.accountId } });
     return { hardDeleted: true };
   }

@@ -24,6 +24,12 @@ export async function login(email: string, password: string): Promise<AuthRespon
   return data;
 }
 
-export async function fetchCurrentUser(): Promise<{ id: string; email: string }> {
-  return apiFetch('/auth/me', { method: 'GET' });
+export async function fetchCurrentUser(): Promise<{ id: string; email: string; csrfToken: string }> {
+  const data = (await apiFetch('/auth/me', { method: 'GET' })) as {
+    id: string;
+    email: string;
+    csrfToken: string;
+  };
+  setCsrfToken(data.csrfToken);
+  return data;
 }

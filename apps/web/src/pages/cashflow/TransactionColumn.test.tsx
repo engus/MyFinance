@@ -60,6 +60,26 @@ describe('TransactionColumn', () => {
     expect(transactionsApi.deleteTransaction).toHaveBeenCalledWith('tx-1');
   });
 
+  it('shows a visible error when deleting fails', async () => {
+    vi.spyOn(transactionsApi, 'deleteTransaction').mockRejectedValue(new Error('Invalid CSRF token'));
+    const onChanged = vi.fn();
+    render(
+      <TransactionColumn
+        title="Expense"
+        kind="EXPENSE"
+        transactions={transactions}
+        accounts={accounts}
+        categories={categories}
+        onChanged={onChanged}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /удалить/i }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Invalid CSRF token');
+    expect(onChanged).not.toHaveBeenCalled();
+  });
+
   it('shows the add-transaction form when "+ Добавить" is clicked', () => {
     render(
       <TransactionColumn

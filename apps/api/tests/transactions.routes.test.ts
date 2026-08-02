@@ -72,6 +72,76 @@ describe('transactions routes', () => {
     expect(created.body.frequency).toBe('RECURRING');
   });
 
+  it('rejects creating a CUSTOM recurring template without customDays', async () => {
+    // Isolated app so this test's registration doesn't consume the shared
+    // `app`'s rate limiter budget (see the "returns 404" test below for the
+    // same reasoning).
+    const isolatedApp = createApp(testPrisma);
+    const { agent, csrfToken } = await registerAgent('custom-no-days@b.com', isolatedApp);
+    const accountId = await createAccount(agent, csrfToken, 'Card');
+    const rentId = await categoryId(agent, 'Аренда/Жильё');
+
+    const res = await agent
+      .post('/api/transactions')
+      .set('X-CSRF-Token', csrfToken)
+      .send({
+        description: 'Rent',
+        accountId,
+        categoryId: rentId,
+        amount: '-1000.00',
+        currency: 'USD',
+        interval: 'CUSTOM',
+        startDate: new Date().toISOString(),
+      });
+
+    expect(res.status).toBe(400);
+  });
+
+  it('rejects a malformed amount on a one-off transaction', async () => {
+    // Isolated app for the same rate-limiter reason as above.
+    const isolatedApp = createApp(testPrisma);
+    const { agent, csrfToken } = await registerAgent('bad-amount-oneoff@b.com', isolatedApp);
+    const accountId = await createAccount(agent, csrfToken, 'Card');
+    const salaryId = await categoryId(agent, 'Зарплата');
+
+    const res = await agent
+      .post('/api/transactions')
+      .set('X-CSRF-Token', csrfToken)
+      .send({
+        description: 'Salary',
+        date: new Date().toISOString(),
+        entries: [
+          { accountId, amount: 'not-a-number', currency: 'USD' },
+          { categoryId: salaryId, amount: '-1000.00', currency: 'USD' },
+        ],
+      });
+
+    expect(res.status).toBe(400);
+  });
+
+  it('rejects a malformed amount on a recurring template', async () => {
+    // Isolated app for the same rate-limiter reason as above.
+    const isolatedApp = createApp(testPrisma);
+    const { agent, csrfToken } = await registerAgent('bad-amount-recurring@b.com', isolatedApp);
+    const accountId = await createAccount(agent, csrfToken, 'Card');
+    const rentId = await categoryId(agent, 'Аренда/Жильё');
+
+    const res = await agent
+      .post('/api/transactions')
+      .set('X-CSRF-Token', csrfToken)
+      .send({
+        description: 'Rent',
+        accountId,
+        categoryId: rentId,
+        amount: '12,50',
+        currency: 'USD',
+        interval: 'MONTH',
+        startDate: new Date().toISOString(),
+      });
+
+    expect(res.status).toBe(400);
+  });
+
   it('updates a one-off transaction and rejects an unbalanced edit', async () => {
     const { agent, csrfToken } = await registerAgent('a@b.com');
     const accountId = await createAccount(agent, csrfToken, 'Card');
@@ -178,6 +248,28 @@ describe('transactions routes', () => {
       .delete(`/api/transactions/${template.body.id}`)
       .set('X-CSRF-Token', csrfToken);
     expect(deletedTemplate.body.hardDeleted).toBe(false);
+  });
+
+  it("rejects (400) a one-off transaction referencing another user's account", async () => {
+    const isolatedApp = createApp(testPrisma);
+    const owner = await registerAgent('owner2@b.com', isolatedApp);
+    const stranger = await registerAgent('stranger2@b.com', isolatedApp);
+    const strangerAccountId = await createAccount(stranger.agent, stranger.csrfToken, 'Stranger card');
+    const salaryId = await categoryId(owner.agent, 'Зарплата');
+
+    const res = await owner.agent
+      .post('/api/transactions')
+      .set('X-CSRF-Token', owner.csrfToken)
+      .send({
+        description: 'Salary',
+        date: new Date().toISOString(),
+        entries: [
+          { accountId: strangerAccountId, amount: '1000.00', currency: 'USD' },
+          { categoryId: salaryId, amount: '-1000.00', currency: 'USD' },
+        ],
+      });
+
+    expect(res.status).toBe(400);
   });
 
   it("returns 404 deleting another user's transaction", async () => {

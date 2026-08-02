@@ -90,6 +90,46 @@ describe('ledger.service', () => {
     ).rejects.toThrow(InvalidEntryError);
   });
 
+  it("rejects an entry referencing another user's account", async () => {
+    const { user, category } = await seedUserWithAccountAndCategory();
+    const stranger = await testPrisma.user.create({ data: { email: 'c@d.com', passwordHash: 'h' } });
+    const strangerAccount = await testPrisma.account.create({
+      data: { userId: stranger.id, name: "Stranger's card", kind: 'FINANCIAL', currency: 'USD' },
+    });
+
+    await expect(
+      createTransaction(testPrisma, {
+        userId: user.id,
+        description: 'Cross-tenant',
+        date: new Date(),
+        entries: [
+          { accountId: strangerAccount.id, amount: '10.00', currency: 'USD' },
+          { categoryId: category.id, amount: '-10.00', currency: 'USD' },
+        ],
+      })
+    ).rejects.toThrow(InvalidEntryError);
+  });
+
+  it("rejects an entry referencing another user's category", async () => {
+    const { user, account } = await seedUserWithAccountAndCategory();
+    const stranger = await testPrisma.user.create({ data: { email: 'c@d.com', passwordHash: 'h' } });
+    const strangerCategory = await testPrisma.category.create({
+      data: { userId: stranger.id, name: "Stranger's category", kind: 'INCOME' },
+    });
+
+    await expect(
+      createTransaction(testPrisma, {
+        userId: user.id,
+        description: 'Cross-tenant',
+        date: new Date(),
+        entries: [
+          { accountId: account.id, amount: '10.00', currency: 'USD' },
+          { categoryId: strangerCategory.id, amount: '-10.00', currency: 'USD' },
+        ],
+      })
+    ).rejects.toThrow(InvalidEntryError);
+  });
+
   it('stores templateId on the created transaction when provided', async () => {
     const { user, account, category } = await seedUserWithAccountAndCategory();
 

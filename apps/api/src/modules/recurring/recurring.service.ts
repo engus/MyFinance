@@ -70,32 +70,45 @@ export async function generateDueOccurrences(
     const categoryAmount = accountAmount.negated();
 
     while (nextRunDate <= now) {
-      const occurrence = await createTransaction(prisma, {
-        userId,
-        description: template.description,
-        date: nextRunDate,
-        frequency: 'ONE_OFF',
-        templateId: template.id,
-        entries: [
-          {
-            accountId: template.templateAccountId!,
-            amount: accountAmount.toString(),
-            currency: template.templateCurrency!,
-          },
-          {
-            categoryId: template.templateCategoryId!,
-            amount: categoryAmount.toString(),
-            currency: template.templateCurrency!,
-          },
-        ],
-      });
-      generated.push(occurrence);
+      const occurrenceDate = nextRunDate;
+      // Compute the next run date up front so that a CUSTOM interval missing
+      // customDays throws before any DB write happens for this occurrence.
+      const advancedRunDate = advance(occurrenceDate, template.interval!, template.customDays ?? undefined);
 
-      nextRunDate = advance(nextRunDate, template.interval!, template.customDays ?? undefined);
-      await prisma.transaction.update({
-        where: { id: template.id },
-        data: { nextRunDate },
+      // Create the occurrence and advance nextRunDate atomically: if either
+      // step fails, neither is committed, so a retried reconcile can't
+      // re-create the same occurrence without also advancing nextRunDate.
+      const occurrence = await prisma.$transaction(async (tx) => {
+        const created = await createTransaction(tx, {
+          userId,
+          description: template.description,
+          date: occurrenceDate,
+          frequency: 'ONE_OFF',
+          templateId: template.id,
+          entries: [
+            {
+              accountId: template.templateAccountId!,
+              amount: accountAmount.toString(),
+              currency: template.templateCurrency!,
+            },
+            {
+              categoryId: template.templateCategoryId!,
+              amount: categoryAmount.toString(),
+              currency: template.templateCurrency!,
+            },
+          ],
+        });
+
+        await tx.transaction.update({
+          where: { id: template.id },
+          data: { nextRunDate: advancedRunDate },
+        });
+
+        return created;
       });
+
+      generated.push(occurrence);
+      nextRunDate = advancedRunDate;
     }
   }
 

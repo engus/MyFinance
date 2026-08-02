@@ -94,7 +94,10 @@ export async function deleteCategory(
   if (category.isSystem) throw new SystemCategoryError('System categories cannot be deleted');
 
   const entryCount = await prisma.entry.count({ where: { categoryId: params.categoryId } });
-  if (entryCount === 0) {
+  const templateCount = await prisma.transaction.count({
+    where: { templateCategoryId: params.categoryId, frequency: 'RECURRING' },
+  });
+  if (entryCount === 0 && templateCount === 0) {
     await prisma.category.delete({ where: { id: params.categoryId } });
     return { hardDeleted: true };
   }

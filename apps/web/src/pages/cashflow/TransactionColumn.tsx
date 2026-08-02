@@ -20,10 +20,16 @@ export function TransactionColumn({
   onChanged: () => void;
 }) {
   const [adding, setAdding] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function handleDelete(id: string) {
-    await deleteTransaction(id);
-    onChanged();
+    setError(null);
+    try {
+      await deleteTransaction(id);
+      onChanged();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Не удалось удалить транзакцию');
+    }
   }
 
   return (
@@ -32,6 +38,7 @@ export function TransactionColumn({
         {title}
         <button onClick={() => setAdding(true)}>+ Добавить</button>
       </h2>
+      {error && <p role="alert">{error}</p>}
       {adding && (
         <TransactionForm
           kind={kind}

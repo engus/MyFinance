@@ -20,10 +20,14 @@ import {
   NotAOneOffTransactionError,
 } from '../modules/transactions/transactions.service';
 
+const amountSchema = z
+  .string()
+  .regex(/^-?\d+(\.\d{1,2})?$/, 'Invalid amount');
+
 const entrySchema = z.object({
   accountId: z.string().min(1).optional(),
   categoryId: z.string().min(1).optional(),
-  amount: z.string().min(1),
+  amount: amountSchema,
   currency: z.string().min(1),
 });
 
@@ -33,16 +37,26 @@ const createOneOffSchema = z.object({
   entries: z.tuple([entrySchema, entrySchema]),
 });
 
-const createRecurringSchema = z.object({
-  description: z.string().min(1),
-  accountId: z.string().min(1),
-  categoryId: z.string().min(1),
-  amount: z.string().min(1),
-  currency: z.string().min(1),
-  interval: z.enum(['WEEK', 'MONTH', 'QUARTER', 'YEAR', 'CUSTOM']),
-  customDays: z.number().int().positive().optional(),
-  startDate: z.coerce.date(),
-});
+const createRecurringSchema = z
+  .object({
+    description: z.string().min(1),
+    accountId: z.string().min(1),
+    categoryId: z.string().min(1),
+    amount: amountSchema,
+    currency: z.string().min(1),
+    interval: z.enum(['WEEK', 'MONTH', 'QUARTER', 'YEAR', 'CUSTOM']),
+    customDays: z.number().int().positive().optional(),
+    startDate: z.coerce.date(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.interval === 'CUSTOM' && data.customDays === undefined) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'customDays is required when interval is CUSTOM',
+        path: ['customDays'],
+      });
+    }
+  });
 
 const updateOneOffSchema = z.object({
   description: z.string().min(1).optional(),
@@ -50,12 +64,22 @@ const updateOneOffSchema = z.object({
   entries: z.tuple([entrySchema, entrySchema]),
 });
 
-const updateRecurringSchema = z.object({
-  amount: z.string().min(1).optional(),
-  interval: z.enum(['WEEK', 'MONTH', 'QUARTER', 'YEAR', 'CUSTOM']).optional(),
-  customDays: z.number().int().positive().optional(),
-  isActive: z.boolean().optional(),
-});
+const updateRecurringSchema = z
+  .object({
+    amount: amountSchema.optional(),
+    interval: z.enum(['WEEK', 'MONTH', 'QUARTER', 'YEAR', 'CUSTOM']).optional(),
+    customDays: z.number().int().positive().optional(),
+    isActive: z.boolean().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.interval === 'CUSTOM' && data.customDays === undefined) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'customDays is required when interval is CUSTOM',
+        path: ['customDays'],
+      });
+    }
+  });
 
 function handleServiceError(res: import('express').Response, err: unknown): boolean {
   if (

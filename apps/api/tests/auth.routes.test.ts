@@ -22,6 +22,7 @@ describe('auth routes', () => {
     const meRes = await agent.get('/api/auth/me');
     expect(meRes.status).toBe(200);
     expect(meRes.body.email).toBe('a@b.com');
+    expect(meRes.body.csrfToken).toBe(csrfToken);
 
     const logoutRes = await agent.post('/api/auth/logout').set('X-CSRF-Token', csrfToken);
     expect(logoutRes.status).toBe(204);

@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterAll } from 'vitest';
 import { testPrisma, truncateAll } from './helpers/db';
 import { createTransaction } from '../src/modules/ledger/ledger.service';
+import { createRecurringTemplate } from '../src/modules/transactions/transactions.service';
 import {
   seedSystemCategories,
   seedDefaultCategories,
@@ -120,6 +121,30 @@ describe('categories.service', () => {
     expect(result.hardDeleted).toBe(true);
     const found = await testPrisma.category.findUnique({ where: { id: category.id } });
     expect(found).toBeNull();
+  });
+
+  it('refuses to hard-delete a category referenced only by a never-yet-generated recurring template', async () => {
+    const user = await testPrisma.user.create({ data: { email: 'a@b.com', passwordHash: 'h' } });
+    const account = await testPrisma.account.create({
+      data: { userId: user.id, name: 'Card', kind: 'FINANCIAL', currency: 'USD' },
+    });
+    const category = await createCategory(testPrisma, { userId: user.id, name: 'Rent', kind: 'EXPENSE' });
+    await createRecurringTemplate(testPrisma, {
+      userId: user.id,
+      description: 'Rent',
+      accountId: account.id,
+      categoryId: category.id,
+      amount: '-1000.00',
+      currency: 'USD',
+      interval: 'MONTH',
+      startDate: new Date(Date.now() + 1000 * 60 * 60 * 24 * 365),
+    });
+
+    const result = await deleteCategory(testPrisma, { userId: user.id, categoryId: category.id });
+
+    expect(result.hardDeleted).toBe(false);
+    const found = await testPrisma.category.findUniqueOrThrow({ where: { id: category.id } });
+    expect(found.isActive).toBe(false);
   });
 
   it('soft-deletes a category that has entries', async () => {

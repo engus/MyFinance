@@ -50,6 +50,67 @@ describe('transactions.service', () => {
     expect(template.entries).toHaveLength(0);
   });
 
+  it("rejects creating a recurring template that references another user's category", async () => {
+    const { user, account } = await seedUserWithAccountAndCategory();
+    const stranger = await testPrisma.user.create({ data: { email: 'c@d.com', passwordHash: 'h' } });
+    const strangerCategory = await testPrisma.category.create({
+      data: { userId: stranger.id, name: "Stranger's category", kind: 'EXPENSE' },
+    });
+
+    await expect(
+      createRecurringTemplate(testPrisma, {
+        userId: user.id,
+        description: 'Rent',
+        accountId: account.id,
+        categoryId: strangerCategory.id,
+        amount: '-1000.00',
+        currency: 'USD',
+        interval: 'MONTH',
+        startDate: new Date(),
+      })
+    ).rejects.toThrow(InvalidEntryError);
+  });
+
+  it("rejects creating a recurring template that references another user's account", async () => {
+    const { user, expense } = await seedUserWithAccountAndCategory();
+    const stranger = await testPrisma.user.create({ data: { email: 'c@d.com', passwordHash: 'h' } });
+    const strangerAccount = await testPrisma.account.create({
+      data: { userId: stranger.id, name: "Stranger's card", kind: 'FINANCIAL', currency: 'USD' },
+    });
+
+    await expect(
+      createRecurringTemplate(testPrisma, {
+        userId: user.id,
+        description: 'Rent',
+        accountId: strangerAccount.id,
+        categoryId: expense.id,
+        amount: '-1000.00',
+        currency: 'USD',
+        interval: 'MONTH',
+        startDate: new Date(),
+      })
+    ).rejects.toThrow(InvalidEntryError);
+  });
+
+  it('excludes deactivated recurring templates from listTransactions', async () => {
+    const { user, account, expense } = await seedUserWithAccountAndCategory();
+    const template = await createRecurringTemplate(testPrisma, {
+      userId: user.id,
+      description: 'Rent',
+      accountId: account.id,
+      categoryId: expense.id,
+      amount: '-1000.00',
+      currency: 'USD',
+      interval: 'MONTH',
+      startDate: new Date(),
+    });
+
+    await deleteTransaction(testPrisma, { userId: user.id, transactionId: template.id });
+
+    const all = await listTransactions(testPrisma, user.id);
+    expect(all.find((t) => t.id === template.id)).toBeUndefined();
+  });
+
   it('lists transactions filtered by frequency', async () => {
     const { user, account, income, expense } = await seedUserWithAccountAndCategory();
     await createTransaction(testPrisma, {

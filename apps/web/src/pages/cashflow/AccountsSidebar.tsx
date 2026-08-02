@@ -11,16 +11,22 @@ export function AccountsSidebar({
   const [reconcilingId, setReconcilingId] = useState<string | null>(null);
   const [newBalance, setNewBalance] = useState('');
   const [result, setResult] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   async function handleReconcile(accountId: string) {
-    const response = await reconcileAccount(accountId, {
-      newBalance,
-      date: new Date().toISOString(),
-    });
-    setResult(`Дельта: ${response.delta}`);
-    setReconcilingId(null);
-    setNewBalance('');
-    onReconciled();
+    setError(null);
+    try {
+      const response = await reconcileAccount(accountId, {
+        newBalance,
+        date: new Date().toISOString(),
+      });
+      setResult(`Дельта: ${response.delta}`);
+      setReconcilingId(null);
+      setNewBalance('');
+      onReconciled();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Не удалось выполнить сверку');
+    }
   }
 
   return (
@@ -47,6 +53,7 @@ export function AccountsSidebar({
         </div>
       ))}
       {result && <p role="status">{result}</p>}
+      {error && <p role="alert">{error}</p>}
     </aside>
   );
 }

@@ -94,7 +94,7 @@ export function createApp(prisma: PrismaClient) {
 
   app.get('/api/auth/me', requireAuth(prisma), asyncHandler(async (req, res) => {
     const user = await prisma.user.findUniqueOrThrow({ where: { id: req.userId! } });
-    res.json({ id: user.id, email: user.email });
+    res.json({ id: user.id, email: user.email, csrfToken: req.sessionRecord!.csrfToken });
   }));
 
   app.use('/api/accounts', createAccountsRouter(prisma));
