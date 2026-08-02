@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { render, screen, cleanup } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { CashflowPage } from './CashflowPage';
 import * as accountsApi from '../api/accounts';
 import * as categoriesApi from '../api/categories';
@@ -15,7 +16,11 @@ describe('CashflowPage', () => {
     vi.spyOn(categoriesApi, 'fetchCategories').mockResolvedValue([]);
     vi.spyOn(transactionsApi, 'fetchTransactions').mockResolvedValue([]);
 
-    render(<CashflowPage />);
+    render(
+      <MemoryRouter>
+        <CashflowPage />
+      </MemoryRouter>
+    );
 
     expect(await screen.findByText('Card')).toBeInTheDocument();
   });

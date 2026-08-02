@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { Account, fetchAccounts } from '../api/accounts';
 import { Category, fetchCategories } from '../api/categories';
 import { Transaction, fetchTransactions } from '../api/transactions';
@@ -35,6 +36,7 @@ export function CashflowPage() {
 
   return (
     <div className="cashflow-page">
+      <Link to="/dashboard">← Дашборд</Link>
       <div className="cashflow-transactions">
         <TransactionColumn
           title="Доход"

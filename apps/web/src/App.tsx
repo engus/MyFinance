@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { DashboardPage } from './pages/DashboardPage';
+import { CashflowPage } from './pages/CashflowPage';
 import { fetchCurrentUser } from './api/auth';
 
 interface CurrentUser {
@@ -49,6 +50,10 @@ export function App() {
         <Route
           path="/dashboard"
           element={user ? <DashboardPage user={user} /> : <Navigate to="/login" />}
+        />
+        <Route
+          path="/cashflow"
+          element={user ? <CashflowPage /> : <Navigate to="/login" />}
         />
         <Route path="*" element={<Navigate to={user ? '/dashboard' : '/login'} />} />
       </Routes>
