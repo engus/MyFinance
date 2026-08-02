@@ -5,15 +5,14 @@ export interface Category {
   name: string;
   kind: 'INCOME' | 'EXPENSE';
   isSystem: boolean;
+  isArchived: boolean;
 }
 
-export async function fetchCategories(): Promise<Category[]> {
-  return apiFetch('/categories');
-}
-
-export async function createCategory(input: {
-  name: string;
-  kind: 'INCOME' | 'EXPENSE';
-}): Promise<Category> {
-  return apiFetch('/categories', { method: 'POST', body: JSON.stringify(input) });
-}
+export const fetchCategories = (includeArchived = false) =>
+  apiFetch<Category[]>(`/categories${includeArchived ? '?includeArchived=true' : ''}`);
+export const createCategory = (input: { name: string; kind: 'INCOME' | 'EXPENSE' }) =>
+  apiFetch<Category>('/categories', { method: 'POST', body: JSON.stringify(input) });
+export const updateCategory = (id: string, input: { name?: string; isArchived?: boolean }) =>
+  apiFetch<Category>(`/categories/${id}`, { method: 'PATCH', body: JSON.stringify(input) });
+export const archiveCategory = (id: string) =>
+  apiFetch<Category>(`/categories/${id}`, { method: 'DELETE' });

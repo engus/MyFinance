@@ -1,51 +1,89 @@
-import { useState, FormEvent } from 'react';
-import { register } from '../api/auth';
-import '../styles/auth.css';
+import { FormEvent, useState } from 'react';
+import { Link } from '../router';
+import { CurrentUser, register } from '../api/auth';
+import { copy } from '../i18n/en';
 
-export function RegisterPage({ onSuccess }: { onSuccess: () => void }) {
+export function RegisterPage({
+  onAuthenticated,
+}: {
+  onAuthenticated: (user: CurrentUser) => void;
+}) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [error, setError] = useState<string | null>(null);
-
-  async function handleSubmit(e: FormEvent) {
-    e.preventDefault();
-    setError(null);
+  const [error, setError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  async function submit(event: FormEvent) {
+    event.preventDefault();
+    setSubmitting(true);
+    setError('');
     try {
-      await register(email, password);
-      onSuccess();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Registration failed');
+      onAuthenticated(
+        await register({ email, password, functionalCurrency: 'USD', timezone: 'UTC' })
+      );
+    } catch (caught) {
+      setError(caught instanceof Error ? caught.message : 'Unable to create account');
+    } finally {
+      setSubmitting(false);
     }
   }
-
   return (
-    <div className="auth-page">
-      <form className="auth-card" onSubmit={handleSubmit}>
-        <h1>MyFinance</h1>
-        <label htmlFor="register-email">
-          Email
-          <input
-            id="register-email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-        </label>
-        <label htmlFor="register-password">
-          Пароль
-          <input
-            id="register-password"
-            type="password"
-            minLength={8}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-        </label>
-        {error && <p role="alert">{error}</p>}
-        <button type="submit">Зарегистрироваться</button>
-      </form>
+    <div className="auth-layout">
+      <section className="auth-story">
+        <div className="brand-mark light">
+          <span>M</span>
+          <strong>MyFinance</strong>
+        </div>
+        <div>
+          <p className="eyebrow">ONE PRIVATE LEDGER</p>
+          <h1>Bring cash, property, investments and debt into one view.</h1>
+          <p>Start with one account. The ledger keeps every movement balanced from day one.</p>
+        </div>
+        <div className="trust-row">
+          <span>● Encrypted sessions</span>
+          <span>● Double-entry core</span>
+        </div>
+      </section>
+      <section className="auth-panel">
+        <form className="auth-form" onSubmit={submit}>
+          <div>
+            <p className="eyebrow">GET STARTED</p>
+            <h2>{copy.auth.registerTitle}</h2>
+            <p>No bank connection required. Reporting preferences come next.</p>
+          </div>
+          <label>
+            {copy.auth.email}
+            <input
+              type="email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              required
+              autoFocus
+            />
+          </label>
+          <label>
+            {copy.auth.password}
+            <input
+              type="password"
+              minLength={12}
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              required
+            />
+            <small>At least 12 characters</small>
+          </label>
+          {error && (
+            <p className="field-error" role="alert">
+              {error}
+            </p>
+          )}
+          <button className="button primary wide" disabled={submitting}>
+            {submitting ? 'Creating…' : copy.auth.register}
+          </button>
+          <p className="auth-switch">
+            {copy.auth.hasAccount} <Link to="/login">Sign in</Link>
+          </p>
+        </form>
+      </section>
     </div>
   );
 }

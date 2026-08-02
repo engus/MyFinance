@@ -1,137 +1,100 @@
 import { Router } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { z } from 'zod';
+import {
+  createAccountSchema,
+  dateSchema,
+  signedMoneySchema,
+  updateAccountSchema,
+  moneySchema,
+} from '@myfinance/contracts';
 import { asyncHandler } from '../lib/asyncHandler';
+import { parseBody } from '../lib/http';
 import { requireAuth } from '../middleware/auth';
 import { requireCsrf } from '../middleware/csrf';
 import {
   createAccount,
   listAccountsWithBalances,
   updateAccount,
-  deleteAccount,
-  AccountNotFoundError,
 } from '../modules/accounts/accounts.service';
-import { generateDueOccurrences } from '../modules/recurring/recurring.service';
-import { applyReconciliation } from '../modules/reconciliation/reconciliation.service';
+import {
+  confirmReconciliation,
+  previewReconciliation,
+} from '../modules/reconciliation/reconciliation.service';
+import { RateService } from '../modules/rates/rates.service';
 
-const createAccountSchema = z.object({
-  name: z.string().min(1),
-  kind: z.enum(['FINANCIAL', 'ASSET']),
-  currency: z.string().min(1),
+const previewSchema = z.object({
+  statedBalance: signedMoneySchema,
+  date: dateSchema,
+  fxRate: moneySchema.optional(),
 });
+const confirmSchema = z.object({ fxRate: moneySchema.optional() });
 
-const updateAccountSchema = z.object({
-  name: z.string().min(1).optional(),
-  currency: z.string().min(1).optional(),
-});
-
-const reconcileSchema = z.object({
-  newBalance: z.string().min(1),
-  date: z.coerce.date(),
-});
-
-export function createAccountsRouter(prisma: PrismaClient): Router {
+export function createAccountsRouter(prisma: PrismaClient, rates: RateService): Router {
   const router = Router();
   router.use(requireAuth(prisma));
 
   router.get(
     '/',
     asyncHandler(async (req, res) => {
-      const accounts = await listAccountsWithBalances(prisma, req.userId!);
-      res.json(accounts);
+      res.json(
+        await listAccountsWithBalances(prisma, req.userId!, req.query.includeArchived === 'true')
+      );
     })
   );
-
   router.post(
     '/',
     requireCsrf,
     asyncHandler(async (req, res) => {
-      const parsed = createAccountSchema.safeParse(req.body);
-      if (!parsed.success) {
-        res.status(400).json({ error: parsed.error.flatten() });
-        return;
-      }
-      const account = await createAccount(prisma, { userId: req.userId!, ...parsed.data });
-      res.status(201).json(account);
+      res
+        .status(201)
+        .json(
+          await createAccount(prisma, rates, req.userId!, parseBody(createAccountSchema, req.body))
+        );
     })
   );
-
   router.patch(
     '/:id',
     requireCsrf,
     asyncHandler(async (req, res) => {
-      const parsed = updateAccountSchema.safeParse(req.body);
-      if (!parsed.success) {
-        res.status(400).json({ error: parsed.error.flatten() });
-        return;
-      }
-      try {
-        const account = await updateAccount(prisma, {
-          userId: req.userId!,
-          accountId: req.params.id,
-          ...parsed.data,
-        });
-        res.json(account);
-      } catch (err) {
-        if (err instanceof AccountNotFoundError) {
-          res.status(404).json({ error: 'Account not found' });
-          return;
-        }
-        throw err;
-      }
+      res.json(
+        await updateAccount(
+          prisma,
+          req.userId!,
+          req.params.id,
+          parseBody(updateAccountSchema, req.body)
+        )
+      );
     })
   );
-
   router.delete(
     '/:id',
     requireCsrf,
     asyncHandler(async (req, res) => {
-      try {
-        const result = await deleteAccount(prisma, { userId: req.userId!, accountId: req.params.id });
-        res.json(result);
-      } catch (err) {
-        if (err instanceof AccountNotFoundError) {
-          res.status(404).json({ error: 'Account not found' });
-          return;
-        }
-        throw err;
-      }
+      res.json(await updateAccount(prisma, req.userId!, req.params.id, { isArchived: true }));
     })
   );
-
   router.post(
-    '/:id/reconcile',
+    '/:id/reconciliations/preview',
     requireCsrf,
     asyncHandler(async (req, res) => {
-      const parsed = reconcileSchema.safeParse(req.body);
-      if (!parsed.success) {
-        res.status(400).json({ error: parsed.error.flatten() });
-        return;
-      }
-
-      const account = await prisma.account.findFirst({
-        where: { id: req.params.id, userId: req.userId! },
-      });
-      if (!account) {
-        res.status(404).json({ error: 'Account not found' });
-        return;
-      }
-
-      const generatedOccurrences = await generateDueOccurrences(prisma, req.userId!);
-      const result = await applyReconciliation(prisma, {
-        userId: req.userId!,
+      const input = parseBody(previewSchema, req.body);
+      const result = await previewReconciliation(prisma, rates, req.userId!, {
         accountId: req.params.id,
-        newBalance: parsed.data.newBalance,
-        date: parsed.data.date,
+        ...input,
       });
-
-      res.json({
-        delta: result.delta.toString(),
-        applied: result.applied,
-        generatedOccurrences: generatedOccurrences.map((t) => t.id),
-      });
+      res.status(result.requiresConfirmation ? 202 : 201).json(result);
     })
   );
-
+  router.post(
+    '/reconciliations/:id/confirm',
+    requireCsrf,
+    asyncHandler(async (req, res) => {
+      const input = parseBody(confirmSchema, req.body);
+      res.json(
+        await confirmReconciliation(prisma, rates, req.userId!, req.params.id, input.fxRate)
+      );
+    })
+  );
   return router;
 }

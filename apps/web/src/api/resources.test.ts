@@ -1,80 +1,72 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { fetchAccounts, createAccount, reconcileAccount } from './accounts';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { createAccount, fetchAccounts, previewReconciliation } from './accounts';
 import { fetchCategories } from './categories';
-import { fetchTransactions, createOneOffTransaction, deleteTransaction } from './transactions';
+import { createOperation, fetchTransactions, reverseTransaction } from './transactions';
 
-function fetchMock() {
-  return fetch as unknown as ReturnType<typeof vi.fn>;
-}
+const fetchMock = () => fetch as unknown as ReturnType<typeof vi.fn>;
 
 describe('resource API clients', () => {
   beforeEach(() => {
     vi.stubGlobal(
       'fetch',
-      vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => [] })
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => ({ items: [], nextCursor: null }),
+      })
     );
   });
+  afterEach(() => vi.unstubAllGlobals());
 
-  afterEach(() => {
-    vi.unstubAllGlobals();
-  });
-
-  it('fetchAccounts hits GET /api/accounts', async () => {
+  it('loads accounts and categories from their collection endpoints', async () => {
     await fetchAccounts();
-    const [url] = fetchMock().mock.calls[0];
-    expect(url).toBe('/api/accounts');
-  });
-
-  it('createAccount posts to /api/accounts with the given payload', async () => {
-    await createAccount({ name: 'Card', kind: 'FINANCIAL', currency: 'USD' });
-    const [url, options] = fetchMock().mock.calls[0];
-    expect(url).toBe('/api/accounts');
-    expect(options.method).toBe('POST');
-    expect(JSON.parse(options.body)).toEqual({ name: 'Card', kind: 'FINANCIAL', currency: 'USD' });
-  });
-
-  it('reconcileAccount posts to /api/accounts/:id/reconcile', async () => {
-    await reconcileAccount('acc-1', { newBalance: '100', date: '2026-08-01' });
-    const [url] = fetchMock().mock.calls[0];
-    expect(url).toBe('/api/accounts/acc-1/reconcile');
-  });
-
-  it('fetchCategories hits GET /api/categories', async () => {
     await fetchCategories();
-    const [url] = fetchMock().mock.calls[0];
-    expect(url).toBe('/api/categories');
+    expect(fetchMock().mock.calls[0][0]).toBe('/api/accounts');
+    expect(fetchMock().mock.calls[1][0]).toBe('/api/categories');
   });
 
-  it('fetchTransactions appends the kind filter as a query param', async () => {
-    await fetchTransactions({ kind: 'EXPENSE' });
-    const [url] = fetchMock().mock.calls[0];
-    expect(url).toBe('/api/transactions?kind=EXPENSE');
-  });
-
-  it('fetchTransactions omits the query string when no filter is given', async () => {
-    await fetchTransactions();
-    const [url] = fetchMock().mock.calls[0];
-    expect(url).toBe('/api/transactions');
-  });
-
-  it('createOneOffTransaction posts entries to /api/transactions', async () => {
-    await createOneOffTransaction({
-      description: 'Salary',
-      date: '2026-08-01',
-      entries: [
-        { accountId: 'acc-1', amount: '1000.00', currency: 'USD' },
-        { categoryId: 'cat-1', amount: '-1000.00', currency: 'USD' },
-      ],
-    });
+  it('creates a typed asset account with an opening balance', async () => {
+    const payload = {
+      name: 'Checking',
+      class: 'ASSET' as const,
+      subtype: 'BANK' as const,
+      currency: 'USD' as const,
+      openingBalance: '1250.50',
+      openingDate: '2026-08-01',
+    };
+    await createAccount(payload);
     const [url, options] = fetchMock().mock.calls[0];
-    expect(url).toBe('/api/transactions');
+    expect(url).toBe('/api/accounts');
     expect(options.method).toBe('POST');
+    expect(JSON.parse(options.body)).toEqual(payload);
   });
 
-  it('deleteTransaction sends DELETE to /api/transactions/:id', async () => {
-    await deleteTransaction('tx-1');
+  it('sends typed operations instead of arbitrary ledger entries', async () => {
+    const operation = {
+      type: 'EXPENSE' as const,
+      date: '2026-08-01',
+      description: 'Groceries',
+      accountId: 'acc-1',
+      categoryId: 'cat-1',
+      amount: '42.17',
+      currency: 'USD' as const,
+    };
+    await createOperation(operation);
     const [url, options] = fetchMock().mock.calls[0];
-    expect(url).toBe('/api/transactions/tx-1');
-    expect(options.method).toBe('DELETE');
+    expect(url).toBe('/api/transactions');
+    expect(JSON.parse(options.body)).toEqual(operation);
+  });
+
+  it('uses cursor filters and immutable reversal endpoints', async () => {
+    await fetchTransactions({ type: 'EXPENSE', cursor: 'tx-10' });
+    await reverseTransaction('tx-1');
+    expect(fetchMock().mock.calls[0][0]).toBe('/api/transactions?type=EXPENSE&cursor=tx-10');
+    expect(fetchMock().mock.calls[1][0]).toBe('/api/transactions/tx-1/reverse');
+    expect(fetchMock().mock.calls[1][1].method).toBe('POST');
+  });
+
+  it('creates a reconciliation preview before confirmation', async () => {
+    await previewReconciliation('acc-1', { statedBalance: '100.00', date: '2026-08-01' });
+    expect(fetchMock().mock.calls[0][0]).toBe('/api/accounts/acc-1/reconciliations/preview');
   });
 });

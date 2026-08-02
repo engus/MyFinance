@@ -1,42 +1,46 @@
+import { CreateAccountInput, UpdateAccountInput } from '@myfinance/contracts';
 import { apiFetch } from './client';
 
 export interface Account {
   id: string;
   name: string;
-  kind: 'FINANCIAL' | 'ASSET';
+  class: 'ASSET' | 'LIABILITY' | 'EQUITY';
+  subtype: string;
   currency: string;
   balance: string;
+  institution: string | null;
+  countryCode: string | null;
+  isArchived: boolean;
 }
 
-export async function fetchAccounts(): Promise<Account[]> {
-  return apiFetch('/accounts');
+export const fetchAccounts = (includeArchived = false) =>
+  apiFetch<Account[]>(`/accounts${includeArchived ? '?includeArchived=true' : ''}`);
+export const createAccount = (input: CreateAccountInput) =>
+  apiFetch<Account>('/accounts', { method: 'POST', body: JSON.stringify(input) });
+export const updateAccount = (id: string, input: UpdateAccountInput) =>
+  apiFetch<Account>(`/accounts/${id}`, { method: 'PATCH', body: JSON.stringify(input) });
+export const archiveAccount = (id: string) =>
+  apiFetch<Account>(`/accounts/${id}`, { method: 'DELETE' });
+
+export interface ReconciliationPreview {
+  id: string;
+  expectedBalance: string;
+  statedBalance: string;
+  delta: string;
+  requiresConfirmation: boolean;
+  applied?: boolean;
 }
 
-export async function createAccount(input: {
-  name: string;
-  kind: 'FINANCIAL' | 'ASSET';
-  currency: string;
-}): Promise<Account> {
-  return apiFetch('/accounts', { method: 'POST', body: JSON.stringify(input) });
-}
-
-export async function updateAccount(
-  id: string,
-  input: { name?: string; currency?: string }
-): Promise<Account> {
-  return apiFetch(`/accounts/${id}`, { method: 'PATCH', body: JSON.stringify(input) });
-}
-
-export async function deleteAccount(id: string): Promise<{ hardDeleted: boolean }> {
-  return apiFetch(`/accounts/${id}`, { method: 'DELETE' });
-}
-
-export async function reconcileAccount(
+export const previewReconciliation = (
   accountId: string,
-  input: { newBalance: string; date: string }
-): Promise<{ delta: string; applied: boolean; generatedOccurrences: string[] }> {
-  return apiFetch(`/accounts/${accountId}/reconcile`, {
+  input: { statedBalance: string; date: string; fxRate?: string }
+) =>
+  apiFetch<ReconciliationPreview>(`/accounts/${accountId}/reconciliations/preview`, {
     method: 'POST',
     body: JSON.stringify(input),
   });
-}
+export const confirmReconciliation = (id: string, fxRate?: string) =>
+  apiFetch<ReconciliationPreview>(`/accounts/reconciliations/${id}/confirm`, {
+    method: 'POST',
+    body: JSON.stringify({ fxRate }),
+  });

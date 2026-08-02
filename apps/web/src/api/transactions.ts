@@ -1,64 +1,61 @@
+import { CreateOperationInput, RecurrenceInput } from '@myfinance/contracts';
 import { apiFetch } from './client';
 
-export interface Entry {
+export interface TransactionEntry {
   id: string;
   accountId: string | null;
   categoryId: string | null;
-  amount: string;
-  currency: string;
+  originalAmount: string;
+  originalCurrency: string;
+  functionalAmount: string;
+  fxRate: string;
+  rateSource: string;
+  account: { name: string; class: string } | null;
+  category: { name: string; kind: string } | null;
 }
 
 export interface Transaction {
   id: string;
+  type: CreateOperationInput['type'] | 'VALUATION' | 'REVERSAL';
+  status: 'POSTED' | 'REVERSED';
   description: string;
-  date: string;
-  frequency: 'ONE_OFF' | 'RECURRING';
-  interval: 'WEEK' | 'MONTH' | 'QUARTER' | 'YEAR' | 'CUSTOM' | null;
-  isActive: boolean;
-  templateAmount: string | null;
-  templateCurrency: string | null;
-  entries: Entry[];
+  occurredOn: string;
+  entries: TransactionEntry[];
+  reversedBy: { id: string } | null;
 }
 
-export interface EntryInput {
-  accountId?: string;
-  categoryId?: string;
-  amount: string;
-  currency: string;
+export interface TransactionPage {
+  items: Transaction[];
+  nextCursor: string | null;
 }
 
-export interface CreateOneOffInput {
+export async function fetchTransactions(filters: Record<string, string | undefined> = {}) {
+  const query = new URLSearchParams();
+  Object.entries(filters).forEach(([key, value]) => value && query.set(key, value));
+  return apiFetch<TransactionPage>(`/transactions${query.size ? `?${query}` : ''}`);
+}
+export const createOperation = (input: CreateOperationInput) =>
+  apiFetch<Transaction>('/transactions', { method: 'POST', body: JSON.stringify(input) });
+export const reverseTransaction = (id: string) =>
+  apiFetch<Transaction>(`/transactions/${id}/reverse`, { method: 'POST', body: '{}' });
+export const replaceTransaction = (id: string, input: CreateOperationInput) =>
+  apiFetch<Transaction>(`/transactions/${id}/replace`, {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+
+export interface RecurringTemplate {
+  id: string;
+  type: string;
   description: string;
-  date: string;
-  entries: [EntryInput, EntryInput];
+  interval: string;
+  customDays: number | null;
+  nextRunDate: string;
+  status: 'ACTIVE' | 'PAUSED' | 'ARCHIVED';
 }
 
-export interface CreateRecurringInput {
-  description: string;
-  accountId: string;
-  categoryId: string;
-  amount: string;
-  currency: string;
-  interval: 'WEEK' | 'MONTH' | 'QUARTER' | 'YEAR' | 'CUSTOM';
-  customDays?: number;
-  startDate: string;
-}
-
-export async function fetchTransactions(
-  filters: { kind?: 'INCOME' | 'EXPENSE' } = {}
-): Promise<Transaction[]> {
-  const query = filters.kind ? `?kind=${filters.kind}` : '';
-  return apiFetch(`/transactions${query}`);
-}
-
-export async function createOneOffTransaction(input: CreateOneOffInput): Promise<Transaction> {
-  return apiFetch('/transactions', { method: 'POST', body: JSON.stringify(input) });
-}
-
-export async function createRecurringTransaction(input: CreateRecurringInput): Promise<Transaction> {
-  return apiFetch('/transactions', { method: 'POST', body: JSON.stringify(input) });
-}
-
-export async function deleteTransaction(id: string): Promise<{ hardDeleted: boolean }> {
-  return apiFetch(`/transactions/${id}`, { method: 'DELETE' });
-}
+export const fetchRecurring = () => apiFetch<RecurringTemplate[]>('/recurring');
+export const createRecurring = (input: RecurrenceInput) =>
+  apiFetch<RecurringTemplate>('/recurring', { method: 'POST', body: JSON.stringify(input) });
+export const updateRecurring = (id: string, input: { status?: string; nextRunDate?: string }) =>
+  apiFetch<RecurringTemplate>(`/recurring/${id}`, { method: 'PATCH', body: JSON.stringify(input) });

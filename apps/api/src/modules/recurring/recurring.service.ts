@@ -1,5 +1,9 @@
-import { RecurrenceInterval, PrismaClient, Transaction } from '@prisma/client';
-import { createTransaction } from '../ledger/ledger.service';
+import { Prisma, PrismaClient, RecurrenceInterval } from '@prisma/client';
+import { createOperationSchema, RecurrenceInput } from '@myfinance/contracts';
+import { dateOnly, formatDateOnly } from '../../lib/date';
+import { AppError } from '../../lib/errors';
+import { postJournal, prepareOperation } from '../ledger/ledger.service';
+import { RateService } from '../rates/rates.service';
 
 function addMonths(date: Date, months: number): Date {
   const day = date.getUTCDate();
@@ -14,103 +18,142 @@ function addMonths(date: Date, months: number): Date {
 }
 
 export function advance(date: Date, interval: RecurrenceInterval, customDays?: number): Date {
-  switch (interval) {
-    case 'WEEK': {
-      const next = new Date(date);
-      next.setUTCDate(next.getUTCDate() + 7);
-      return next;
-    }
-    case 'MONTH':
-      return addMonths(date, 1);
-    case 'QUARTER':
-      return addMonths(date, 3);
-    case 'YEAR': {
-      const day = date.getUTCDate();
-      const next = new Date(date);
-      next.setUTCDate(1);
-      next.setUTCFullYear(next.getUTCFullYear() + 1);
-      const daysInMonth = new Date(
-        Date.UTC(next.getUTCFullYear(), next.getUTCMonth() + 1, 0)
-      ).getUTCDate();
-      next.setUTCDate(Math.min(day, daysInMonth));
-      return next;
-    }
-    case 'CUSTOM': {
-      if (!customDays) {
-        throw new Error('customDays is required for CUSTOM interval');
-      }
-      const next = new Date(date);
-      next.setUTCDate(next.getUTCDate() + customDays);
-      return next;
-    }
-    default:
-      throw new Error(`Unknown interval: ${interval}`);
-  }
+  const next = new Date(date);
+  if (interval === 'WEEK') next.setUTCDate(next.getUTCDate() + 7);
+  else if (interval === 'MONTH') return addMonths(date, 1);
+  else if (interval === 'QUARTER') return addMonths(date, 3);
+  else if (interval === 'YEAR') return addMonths(date, 12);
+  else if (interval === 'CUSTOM' && customDays) next.setUTCDate(next.getUTCDate() + customDays);
+  else
+    throw new AppError(400, 'INVALID_RECURRENCE', 'customDays is required for a custom interval');
+  return next;
+}
+
+export async function createRecurringTemplate(
+  prisma: PrismaClient,
+  rates: RateService,
+  userId: string,
+  input: RecurrenceInput
+) {
+  const operation = { ...input.operation, date: input.startDate };
+  const prepared = await prepareOperation(prisma, rates, userId, operation);
+  return prisma.recurringTemplate.create({
+    data: {
+      userId,
+      type: prepared.type,
+      description: prepared.description,
+      payload: operation as Prisma.InputJsonValue,
+      interval: input.interval,
+      customDays: input.interval === 'CUSTOM' ? input.customDays : null,
+      nextRunDate: dateOnly(input.startDate),
+      lines: {
+        create: prepared.lines.map((line) => ({
+          accountId: line.accountId,
+          categoryId: line.categoryId,
+          originalAmount: line.originalAmount,
+          currency: line.originalCurrency,
+        })),
+      },
+    },
+    include: { lines: true },
+  });
+}
+
+export async function listRecurringTemplates(prisma: PrismaClient, userId: string) {
+  return prisma.recurringTemplate.findMany({
+    where: { userId, status: { not: 'ARCHIVED' } },
+    include: { lines: true },
+    orderBy: { nextRunDate: 'asc' },
+  });
+}
+
+export async function updateRecurringTemplate(
+  prisma: PrismaClient,
+  userId: string,
+  id: string,
+  input: { status?: 'ACTIVE' | 'PAUSED' | 'ARCHIVED'; nextRunDate?: string }
+) {
+  const template = await prisma.recurringTemplate.findFirst({ where: { id, userId } });
+  if (!template) throw new AppError(404, 'RECURRING_NOT_FOUND', 'Recurring template not found');
+  return prisma.recurringTemplate.update({
+    where: { id },
+    data: {
+      status: input.status,
+      nextRunDate: input.nextRunDate ? dateOnly(input.nextRunDate) : undefined,
+    },
+  });
 }
 
 export async function generateDueOccurrences(
   prisma: PrismaClient,
-  userId: string
-): Promise<Transaction[]> {
-  const now = new Date();
-  const templates = await prisma.transaction.findMany({
+  rates: RateService,
+  userId: string,
+  options: { accountId?: string; through?: Date; limit?: number } = {}
+) {
+  const through = dateOnly(options.through ?? new Date());
+  const limit = Math.min(options.limit ?? 120, 240);
+  const templates = await prisma.recurringTemplate.findMany({
     where: {
       userId,
-      frequency: 'RECURRING',
-      isActive: true,
-      nextRunDate: { lte: now },
+      status: 'ACTIVE',
+      nextRunDate: { lte: through },
+      ...(options.accountId ? { lines: { some: { accountId: options.accountId } } } : {}),
     },
+    orderBy: { nextRunDate: 'asc' },
+    take: limit,
   });
+  const generated: string[] = [];
 
-  const generated: Transaction[] = [];
-
-  for (const template of templates) {
-    let nextRunDate = template.nextRunDate!;
-    const accountAmount = template.templateAmount!;
-    const categoryAmount = accountAmount.negated();
-
-    while (nextRunDate <= now) {
-      const occurrenceDate = nextRunDate;
-      // Compute the next run date up front so that a CUSTOM interval missing
-      // customDays throws before any DB write happens for this occurrence.
-      const advancedRunDate = advance(occurrenceDate, template.interval!, template.customDays ?? undefined);
-
-      // Create the occurrence and advance nextRunDate atomically: if either
-      // step fails, neither is committed, so a retried reconcile can't
-      // re-create the same occurrence without also advancing nextRunDate.
-      const occurrence = await prisma.$transaction(async (tx) => {
-        const created = await createTransaction(tx, {
-          userId,
-          description: template.description,
-          date: occurrenceDate,
-          frequency: 'ONE_OFF',
-          templateId: template.id,
-          entries: [
-            {
-              accountId: template.templateAccountId!,
-              amount: accountAmount.toString(),
-              currency: template.templateCurrency!,
-            },
-            {
-              categoryId: template.templateCategoryId!,
-              amount: categoryAmount.toString(),
-              currency: template.templateCurrency!,
-            },
-          ],
-        });
-
-        await tx.transaction.update({
-          where: { id: template.id },
-          data: { nextRunDate: advancedRunDate },
-        });
-
-        return created;
+  for (const initial of templates) {
+    let scheduledDate = initial.nextRunDate;
+    while (scheduledDate <= through && generated.length < limit) {
+      const nextRunDate = advance(scheduledDate, initial.interval, initial.customDays ?? undefined);
+      const parsed = createOperationSchema.parse({
+        ...(initial.payload as Record<string, unknown>),
+        date: formatDateOnly(scheduledDate),
       });
-
-      generated.push(occurrence);
-      nextRunDate = advancedRunDate;
+      const prepared = await prepareOperation(prisma, rates, userId, parsed);
+      try {
+        const transactionId = await prisma.$transaction(
+          async (tx) => {
+            const claimed = await tx.recurringTemplate.updateMany({
+              where: { id: initial.id, userId, status: 'ACTIVE', nextRunDate: scheduledDate },
+              data: { nextRunDate },
+            });
+            if (claimed.count !== 1)
+              throw new AppError(409, 'RECURRENCE_CLAIMED', 'Occurrence was claimed');
+            const transaction = await postJournal(tx, {
+              userId,
+              type: prepared.type,
+              description: prepared.description,
+              occurredOn: scheduledDate,
+              lines: prepared.lines,
+              metadata: {
+                recurringTemplateId: initial.id,
+                scheduledDate: formatDateOnly(scheduledDate),
+              },
+            });
+            await tx.recurringOccurrence.create({
+              data: { templateId: initial.id, scheduledDate, transactionId: transaction.id },
+            });
+            return transaction.id;
+          },
+          { isolationLevel: Prisma.TransactionIsolationLevel.Serializable }
+        );
+        generated.push(transactionId);
+      } catch (error) {
+        if (
+          (error instanceof AppError && error.code === 'RECURRENCE_CLAIMED') ||
+          (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') ||
+          (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2034')
+        ) {
+          break;
+        }
+        throw error;
+      }
+      scheduledDate = nextRunDate;
     }
   }
 
-  return generated;
+  return { transactionIds: generated, truncated: generated.length >= limit };
 }

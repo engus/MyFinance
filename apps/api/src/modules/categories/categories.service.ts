@@ -1,107 +1,89 @@
-import { PrismaClient, Prisma } from '@prisma/client';
+import { Prisma, PrismaClient } from '@prisma/client';
+import { AppError } from '../../lib/errors';
 
-export const SYSTEM_CATEGORY_OTHER = 'Other';
-export const SYSTEM_CATEGORY_UNREALIZED_REVALUATION = 'Unrealized Revaluation';
+type Db = PrismaClient | Prisma.TransactionClient;
 
-export async function seedSystemCategories(prisma: PrismaClient, userId: string): Promise<void> {
+const SYSTEM_CATEGORIES = [
+  { name: 'Other income', kind: 'INCOME', systemKey: 'OTHER_INCOME', affectsCashflow: true },
+  { name: 'Other expense', kind: 'EXPENSE', systemKey: 'OTHER_EXPENSE', affectsCashflow: true },
+  { name: 'Unrealized gain', kind: 'INCOME', systemKey: 'UNREALIZED_GAIN', affectsCashflow: false },
+  {
+    name: 'Unrealized loss',
+    kind: 'EXPENSE',
+    systemKey: 'UNREALIZED_LOSS',
+    affectsCashflow: false,
+  },
+  { name: 'Interest', kind: 'EXPENSE', systemKey: 'INTEREST', affectsCashflow: true },
+  { name: 'Fees', kind: 'EXPENSE', systemKey: 'FEES', affectsCashflow: true },
+] as const;
+
+const DEFAULT_CATEGORIES = [
+  { name: 'Salary', kind: 'INCOME' },
+  { name: 'Business income', kind: 'INCOME' },
+  { name: 'Dividends', kind: 'INCOME' },
+  { name: 'Groceries', kind: 'EXPENSE' },
+  { name: 'Housing', kind: 'EXPENSE' },
+  { name: 'Transport', kind: 'EXPENSE' },
+  { name: 'Utilities', kind: 'EXPENSE' },
+  { name: 'Health', kind: 'EXPENSE' },
+  { name: 'Entertainment', kind: 'EXPENSE' },
+  { name: 'Travel', kind: 'EXPENSE' },
+] as const;
+
+export async function seedCategories(prisma: Db, userId: string): Promise<void> {
   await prisma.category.createMany({
     data: [
-      { userId, name: SYSTEM_CATEGORY_OTHER, kind: 'EXPENSE', isSystem: true },
-      { userId, name: SYSTEM_CATEGORY_UNREALIZED_REVALUATION, kind: 'INCOME', isSystem: true },
+      ...SYSTEM_CATEGORIES.map((category) => ({ ...category, userId, isSystem: true })),
+      ...DEFAULT_CATEGORIES.map((category) => ({ ...category, userId })),
     ],
   });
 }
-
-export async function seedDefaultCategories(prisma: PrismaClient, userId: string): Promise<void> {
-  await prisma.category.createMany({
-    data: [
-      { userId, name: 'Зарплата', kind: 'INCOME' },
-      { userId, name: 'Прочий доход', kind: 'INCOME' },
-      { userId, name: 'Продукты', kind: 'EXPENSE' },
-      { userId, name: 'Аренда/Жильё', kind: 'EXPENSE' },
-      { userId, name: 'Авто', kind: 'EXPENSE' },
-      { userId, name: 'Коммунальные', kind: 'EXPENSE' },
-      { userId, name: 'Кредиты', kind: 'EXPENSE' },
-      { userId, name: 'Развлечения', kind: 'EXPENSE' },
-      { userId, name: 'Здоровье', kind: 'EXPENSE' },
-      { userId, name: 'Прочие расходы', kind: 'EXPENSE' },
-    ],
-  });
-}
-
-export class CategoryNotFoundError extends Error {}
-export class SystemCategoryError extends Error {}
-export class DuplicateCategoryNameError extends Error {}
 
 export async function listCategories(
   prisma: PrismaClient,
   userId: string,
-  options: { includeInactive?: boolean } = {}
+  includeArchived = false
 ) {
   return prisma.category.findMany({
-    where: { userId, ...(options.includeInactive ? {} : { isActive: true }) },
-    orderBy: { name: 'asc' },
+    where: { userId, ...(includeArchived ? {} : { isArchived: false }) },
+    orderBy: [{ kind: 'asc' }, { name: 'asc' }],
   });
 }
 
 export async function createCategory(
   prisma: PrismaClient,
-  params: { userId: string; name: string; kind: 'INCOME' | 'EXPENSE' }
+  userId: string,
+  input: { name: string; kind: 'INCOME' | 'EXPENSE' }
 ) {
   try {
-    return await prisma.category.create({
-      data: { userId: params.userId, name: params.name, kind: params.kind },
-    });
-  } catch (err) {
-    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
-      throw new DuplicateCategoryNameError(`Category "${params.name}" already exists`);
+    return await prisma.category.create({ data: { userId, name: input.name, kind: input.kind } });
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+      throw new AppError(409, 'CATEGORY_NAME_EXISTS', 'A category with this name already exists');
     }
-    throw err;
+    throw error;
   }
 }
 
 export async function updateCategory(
   prisma: PrismaClient,
-  params: { userId: string; categoryId: string; name: string }
+  userId: string,
+  categoryId: string,
+  input: { name?: string; isArchived?: boolean }
 ) {
-  const category = await prisma.category.findFirst({
-    where: { id: params.categoryId, userId: params.userId },
-  });
-  if (!category) throw new CategoryNotFoundError();
-  if (category.isSystem) throw new SystemCategoryError('System categories cannot be edited');
+  const category = await prisma.category.findFirst({ where: { id: categoryId, userId } });
+  if (!category) throw new AppError(404, 'CATEGORY_NOT_FOUND', 'Category not found');
+  if (category.isSystem)
+    throw new AppError(403, 'SYSTEM_CATEGORY', 'System categories cannot be changed');
 
-  try {
-    return await prisma.category.update({
-      where: { id: params.categoryId },
-      data: { name: params.name },
-    });
-  } catch (err) {
-    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
-      throw new DuplicateCategoryNameError(`Category "${params.name}" already exists`);
+  return prisma.$transaction(async (tx) => {
+    const updated = await tx.category.update({ where: { id: categoryId }, data: input });
+    if (input.isArchived) {
+      await tx.recurringTemplate.updateMany({
+        where: { userId, lines: { some: { categoryId } }, status: 'ACTIVE' },
+        data: { status: 'PAUSED' },
+      });
     }
-    throw err;
-  }
-}
-
-export async function deleteCategory(
-  prisma: PrismaClient,
-  params: { userId: string; categoryId: string }
-): Promise<{ hardDeleted: boolean }> {
-  const category = await prisma.category.findFirst({
-    where: { id: params.categoryId, userId: params.userId },
+    return updated;
   });
-  if (!category) throw new CategoryNotFoundError();
-  if (category.isSystem) throw new SystemCategoryError('System categories cannot be deleted');
-
-  const entryCount = await prisma.entry.count({ where: { categoryId: params.categoryId } });
-  const templateCount = await prisma.transaction.count({
-    where: { templateCategoryId: params.categoryId, frequency: 'RECURRING' },
-  });
-  if (entryCount === 0 && templateCount === 0) {
-    await prisma.category.delete({ where: { id: params.categoryId } });
-    return { hardDeleted: true };
-  }
-
-  await prisma.category.update({ where: { id: params.categoryId }, data: { isActive: false } });
-  return { hardDeleted: false };
 }

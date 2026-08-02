@@ -8,6 +8,7 @@
 Второй из пяти под-проектов приложения для домашней бухгалтерии (полный список — `docs/superpowers/specs/2026-08-02-foundation-design.md`). Фундамент уже реализован: ledger/account/category/reconciliation/rates сервисы, сессионная аутентификация, страницы логина/регистрации и заглушка дашборда. Ни один из этих сервисов пока не доступен по HTTP, и ни один UI кроме auth-страниц не существует.
 
 Цель этого под-проекта — сделать первую реально рабочую часть приложения:
+
 - HTTP API поверх уже написанных сервисов (accounts, categories, transactions, reconciliation).
 - Логика генерации регулярных транзакций (шаблонов), которая была заложена в схему (`Transaction.frequency`/`interval`) в Фундаменте, но не реализована.
 - Дефолтные категории при регистрации.
@@ -43,12 +44,12 @@
 `apps/api/src/modules/recurring/recurring.service.ts`:
 
 ```ts
-function advance(date: Date, interval: RecurrenceInterval, customDays?: number): Date
+function advance(date: Date, interval: RecurrenceInterval, customDays?: number): Date;
 // WEEK/MONTH/QUARTER/YEAR — календарная арифметика (не "+30 дней"),
 // с учётом конца месяца (31 янв + месяц -> 28/29 фев).
 // CUSTOM -> date + customDays.
 
-async function generateDueOccurrences(prisma: PrismaClient, userId: string): Promise<Transaction[]>
+async function generateDueOccurrences(prisma: PrismaClient, userId: string): Promise<Transaction[]>;
 // Для каждого активного RECURRING-шаблона пользователя с nextRunDate <= сегодня:
 //   пока nextRunDate <= сегодня:
 //     createTransaction(...) с frequency=ONE_OFF, templateId=template.id, date=nextRunDate
@@ -74,6 +75,7 @@ async function generateDueOccurrences(prisma: PrismaClient, userId: string): Pro
 ## Мягкое удаление
 
 Единое правило для `Account` и `Category`:
+
 - `DELETE` без проводок → настоящее удаление из БД.
 - `DELETE` с существующими проводками → `isActive = false` (мягкое удаление), запись пропадает из активных списков, но остаётся доступной по историческим проводкам.
 - Системные категории (`isSystem = true`) всегда отклоняют `PATCH`/`DELETE` с `403`.
@@ -131,6 +133,7 @@ POST   /api/accounts/:id/reconcile      -> { newBalance, date } -> generateDueOc
 ## Тестирование
 
 **Backend unit-тесты** (`apps/api/tests/recurring.service.test.ts` и др.):
+
 - `advance()` для WEEK/MONTH/QUARTER/YEAR/CUSTOM, включая конец месяца.
 - Догон: шаблон не трогали 3 месяца -> генерируется ровно 3 occurrence за один вызов.
 - Идемпотентность: повторный вызов в тот же день не плодит дубли.
@@ -138,6 +141,7 @@ POST   /api/accounts/:id/reconcile      -> { newBalance, date } -> generateDueOc
 - Интеграционный тест сверки: occurrence аренды генерируется, дельта в `Other` отражает только необъяснённый остаток.
 
 **Route-тесты** (supertest, по образцу `auth.routes.test.ts`):
+
 - Изоляция по владельцу — `404` при попытке доступа к чужому счёту/категории/транзакции.
 - Системные категории отклоняют `PATCH`/`DELETE` с `403`.
 - Дубликат имени категории -> `409`.

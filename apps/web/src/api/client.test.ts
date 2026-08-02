@@ -34,11 +34,35 @@ describe('apiFetch', () => {
       vi.fn().mockResolvedValue({
         ok: false,
         status: 401,
-        json: async () => ({ error: 'Invalid email or password' }),
+        json: async () => ({
+          error: { code: 'INVALID_CREDENTIALS', message: 'Invalid email or password' },
+        }),
       })
     );
     await expect(apiFetch('/auth/login', { method: 'POST' })).rejects.toThrow(
       'Invalid email or password'
     );
+  });
+
+  it('preserves validation fields from the common error envelope', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 422,
+        json: async () => ({
+          error: {
+            code: 'VALIDATION_ERROR',
+            message: 'Invalid input',
+            fields: { amount: ['Required'] },
+          },
+        }),
+      })
+    );
+    await expect(apiFetch('/transactions', { method: 'POST', body: '{}' })).rejects.toMatchObject({
+      status: 422,
+      code: 'VALIDATION_ERROR',
+      fields: { amount: ['Required'] },
+    });
   });
 });
