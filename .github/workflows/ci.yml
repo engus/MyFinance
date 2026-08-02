@@ -71,3 +71,20 @@ jobs:
       - run: npm run db:deploy
       - run: npx playwright install --with-deps chromium
       - run: npm run e2e
+
+  packaging:
+    runs-on: ubuntu-latest
+    needs: verify
+    env:
+      POSTGRES_PASSWORD: production-ci-password
+      DATABASE_URL: postgresql://myfinance:production-ci-password@postgres:5432/myfinance
+      TOTP_ENCRYPTION_KEY: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+      WEB_PORT: 18080
+    steps:
+      - uses: actions/checkout@v5
+      - run: docker compose -f docker-compose.prod.yml up --build -d --wait
+      - run: curl --fail --show-error --silent http://127.0.0.1:18080/healthz
+      - if: always()
+        run: docker compose -f docker-compose.prod.yml logs --no-color
+      - if: always()
+        run: docker compose -f docker-compose.prod.yml down --volumes
