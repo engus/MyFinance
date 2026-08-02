@@ -12,19 +12,13 @@ import {
 import { destroySession } from './lib/session';
 import { requireAuth } from './middleware/auth';
 import { requireCsrf } from './middleware/csrf';
+import { asyncHandler } from './lib/asyncHandler';
+import { createAccountsRouter } from './routes/accounts.routes';
 
 const credentialsSchema = z.object({
   email: z.string().email(),
   password: z.string().min(8),
 });
-
-function asyncHandler(
-  fn: (req: express.Request, res: express.Response) => Promise<void>
-) {
-  return (req: express.Request, res: express.Response, next: express.NextFunction) => {
-    fn(req, res).catch(next);
-  };
-}
 
 export function createApp(prisma: PrismaClient) {
   const app = express();
@@ -100,6 +94,8 @@ export function createApp(prisma: PrismaClient) {
     const user = await prisma.user.findUniqueOrThrow({ where: { id: req.userId! } });
     res.json({ id: user.id, email: user.email });
   }));
+
+  app.use('/api/accounts', createAccountsRouter(prisma));
 
   app.use((err: unknown, req: express.Request, res: express.Response, next: express.NextFunction) => {
     console.error(err);
