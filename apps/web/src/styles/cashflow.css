@@ -1,0 +1,70 @@
+.cashflow-page {
+  display: flex;
+  gap: 24px;
+  padding: 32px;
+  align-items: flex-start;
+}
+
+.cashflow-transactions {
+  flex: 1;
+  display: flex;
+  gap: 24px;
+}
+
+.cashflow-column {
+  flex: 1;
+  min-width: 0;
+}
+
+.cashflow-column h2 {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 16px;
+}
+
+.transaction-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid #eee;
+}
+
+.transaction-row .recurring-badge {
+  color: #666;
+  font-size: 12px;
+  margin-left: 6px;
+}
+
+.accounts-sidebar {
+  width: 240px;
+  flex-shrink: 0;
+}
+
+.account-card {
+  border: 1px solid #d0d0d5;
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 12px;
+}
+
+.account-card .account-name {
+  font-weight: 600;
+}
+
+.account-card .account-balance {
+  color: #333;
+  margin: 4px 0 8px;
+}
+
+.reconcile-form {
+  display: flex;
+  gap: 6px;
+}
+
+.reconcile-form input {
+  width: 90px;
+  padding: 6px;
+  border: 1px solid #d0d0d5;
+  border-radius: 6px;
+}
