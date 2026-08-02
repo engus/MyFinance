@@ -37,7 +37,7 @@ export function CashflowPage() {
     <div className="cashflow-page">
       <div className="cashflow-transactions">
         <TransactionColumn
-          title="Income"
+          title="Доход"
           kind="INCOME"
           transactions={income}
           accounts={accounts}
@@ -45,7 +45,7 @@ export function CashflowPage() {
           onChanged={loadAll}
         />
         <TransactionColumn
-          title="Expense"
+          title="Расход"
           kind="EXPENSE"
           transactions={expense}
           accounts={accounts}
