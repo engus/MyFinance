@@ -15,6 +15,7 @@ import { requireCsrf } from './middleware/csrf';
 import { asyncHandler } from './lib/asyncHandler';
 import { createAccountsRouter } from './routes/accounts.routes';
 import { createCategoriesRouter } from './routes/categories.routes';
+import { createTransactionsRouter } from './routes/transactions.routes';
 
 const credentialsSchema = z.object({
   email: z.string().email(),
@@ -98,6 +99,7 @@ export function createApp(prisma: PrismaClient) {
 
   app.use('/api/accounts', createAccountsRouter(prisma));
   app.use('/api/categories', createCategoriesRouter(prisma));
+  app.use('/api/transactions', createTransactionsRouter(prisma));
 
   app.use((err: unknown, req: express.Request, res: express.Response, next: express.NextFunction) => {
     console.error(err);
