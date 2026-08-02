@@ -57,46 +57,62 @@ model Session {
 }
 
 model Account {
-  id        String      @id @default(uuid())
-  userId    String
-  name      String
-  kind      AccountKind
-  currency  String
-  isSystem  Boolean     @default(false)
-  createdAt DateTime    @default(now())
-  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
-  entries   Entry[]
+  id                 String        @id @default(uuid())
+  userId             String
+  name               String
+  kind               AccountKind
+  currency           String
+  isSystem           Boolean       @default(false)
+  isActive           Boolean       @default(true)
+  createdAt          DateTime      @default(now())
+  user               User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  entries            Entry[]
+  recurringTemplates Transaction[] @relation("TemplateAccount")
 
   @@index([userId])
 }
 
 model Category {
-  id        String       @id @default(uuid())
-  userId    String
-  name      String
-  kind      CategoryKind
-  isSystem  Boolean      @default(false)
-  createdAt DateTime     @default(now())
-  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-  entries   Entry[]
+  id                 String        @id @default(uuid())
+  userId             String
+  name               String
+  kind               CategoryKind
+  isSystem           Boolean       @default(false)
+  isActive           Boolean       @default(true)
+  createdAt          DateTime      @default(now())
+  user               User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  entries            Entry[]
+  recurringTemplates Transaction[] @relation("TemplateCategory")
 
   @@index([userId])
   @@unique([userId, name])
 }
 
 model Transaction {
-  id          String                @id @default(uuid())
-  userId      String
-  description String
-  date        DateTime
-  frequency   TransactionFrequency  @default(ONE_OFF)
-  interval    RecurrenceInterval?
-  customDays  Int?
-  createdAt   DateTime              @default(now())
-  user        User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  entries     Entry[]
+  id                 String                @id @default(uuid())
+  userId              String
+  description         String
+  date                DateTime
+  frequency           TransactionFrequency @default(ONE_OFF)
+  interval            RecurrenceInterval?
+  customDays          Int?
+  isActive            Boolean              @default(true)
+  nextRunDate         DateTime?
+  templateId          String?
+  templateAccountId   String?
+  templateCategoryId  String?
+  templateAmount      Decimal?             @db.Decimal(18, 2)
+  templateCurrency    String?
+  createdAt           DateTime             @default(now())
+  user                User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  entries             Entry[]
+  template            Transaction?         @relation("TransactionOccurrences", fields: [templateId], references: [id], onDelete: SetNull)
+  occurrences         Transaction[]        @relation("TransactionOccurrences")
+  templateAccount     Account?             @relation("TemplateAccount", fields: [templateAccountId], references: [id])
+  templateCategory    Category?            @relation("TemplateCategory", fields: [templateCategoryId], references: [id])
 
   @@index([userId])
+  @@index([templateId])
 }
 
 model Entry {
