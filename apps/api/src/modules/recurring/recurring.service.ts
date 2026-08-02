@@ -1,4 +1,5 @@
-import { RecurrenceInterval } from '@prisma/client';
+import { RecurrenceInterval, PrismaClient, Transaction } from '@prisma/client';
+import { createTransaction } from '../ledger/ledger.service';
 
 function addMonths(date: Date, months: number): Date {
   const day = date.getUTCDate();
@@ -45,4 +46,58 @@ export function advance(date: Date, interval: RecurrenceInterval, customDays?: n
     default:
       throw new Error(`Unknown interval: ${interval}`);
   }
+}
+
+export async function generateDueOccurrences(
+  prisma: PrismaClient,
+  userId: string
+): Promise<Transaction[]> {
+  const now = new Date();
+  const templates = await prisma.transaction.findMany({
+    where: {
+      userId,
+      frequency: 'RECURRING',
+      isActive: true,
+      nextRunDate: { lte: now },
+    },
+  });
+
+  const generated: Transaction[] = [];
+
+  for (const template of templates) {
+    let nextRunDate = template.nextRunDate!;
+    const accountAmount = template.templateAmount!;
+    const categoryAmount = accountAmount.negated();
+
+    while (nextRunDate <= now) {
+      const occurrence = await createTransaction(prisma, {
+        userId,
+        description: template.description,
+        date: nextRunDate,
+        frequency: 'ONE_OFF',
+        templateId: template.id,
+        entries: [
+          {
+            accountId: template.templateAccountId!,
+            amount: accountAmount.toString(),
+            currency: template.templateCurrency!,
+          },
+          {
+            categoryId: template.templateCategoryId!,
+            amount: categoryAmount.toString(),
+            currency: template.templateCurrency!,
+          },
+        ],
+      });
+      generated.push(occurrence);
+
+      nextRunDate = advance(nextRunDate, template.interval!, template.customDays ?? undefined);
+      await prisma.transaction.update({
+        where: { id: template.id },
+        data: { nextRunDate },
+      });
+    }
+  }
+
+  return generated;
 }
