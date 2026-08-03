@@ -58,7 +58,7 @@ services:
         condition: service_healthy
     ports:
       - '${WEB_PORT:-8080}:8080'
-    networks: [backend]
+    networks: [backend, ingress]
 
 volumes:
   pgdata-prod:
@@ -67,3 +67,4 @@ networks:
   backend:
     internal: true
   egress:
+  ingress:
