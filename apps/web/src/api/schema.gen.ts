@@ -294,6 +294,128 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/accounts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List owned user accounts with exact ledger balances */
+        get: operations["listAccounts"];
+        put?: never;
+        /** Create an account and optionally post its opening balance atomically */
+        post: operations["createAccount"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/accounts/{accountId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Rename, archive, restore, or change an unused account currency */
+        patch: operations["updateAccount"];
+        trace?: never;
+    };
+    "/api/v1/categories": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List owned income and expense categories */
+        get: operations["listCategories"];
+        put?: never;
+        /** Create a category and its private ledger account atomically */
+        post: operations["createCategory"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/categories/{categoryId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Rename, archive, or restore an owned category */
+        patch: operations["updateCategory"];
+        trace?: never;
+    };
+    "/api/v1/transactions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List immutable operations using stable cursor pagination */
+        get: operations["listTransactions"];
+        put?: never;
+        /** Post one typed financial operation as a balanced transaction */
+        post: operations["createTransaction"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/transactions/{transactionId}/reversal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Preserve and reverse an owned posted transaction */
+        post: operations["reverseTransaction"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/transactions/{transactionId}/replacement": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Atomically reverse an operation and post its corrected replacement */
+        post: operations["replaceTransaction"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -435,6 +557,138 @@ export interface components {
             /** Format: uuid */
             recurringIncomeSetupId?: string;
         };
+        AccountListResponse: {
+            accounts: components["schemas"]["Account"][];
+        };
+        Account: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            accountClass: components["schemas"]["UserAccountClass"];
+            subtype: components["schemas"]["AccountSubtype"];
+            currency: components["schemas"]["Currency"];
+            balance: components["schemas"]["DecimalAmount"];
+            archived: boolean;
+            hasPostings: boolean;
+        };
+        CreateAccountRequest: {
+            name: string;
+            accountClass: components["schemas"]["UserAccountClass"];
+            subtype: components["schemas"]["AccountSubtype"];
+            currency: components["schemas"]["Currency"];
+            openingBalance?: components["schemas"]["DecimalAmount"];
+            /** Format: date */
+            openingBalanceDate?: string;
+            /** Format: uuid */
+            idempotencyKey?: string;
+        };
+        UpdateAccountRequest: {
+            name?: string;
+            currency?: components["schemas"]["Currency"];
+            archived?: boolean;
+        };
+        CategoryListResponse: {
+            categories: components["schemas"]["Category"][];
+        };
+        Category: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            direction: components["schemas"]["CategoryDirection"];
+            archived: boolean;
+        };
+        CreateCategoryRequest: {
+            name: string;
+            direction: components["schemas"]["CategoryDirection"];
+        };
+        UpdateCategoryRequest: {
+            name?: string;
+            archived?: boolean;
+        };
+        /** @description Typed operation contract. Raw journal entries are never accepted from clients. */
+        CreateTransactionRequest: {
+            /** @enum {string} */
+            type: "OPENING_BALANCE" | "INCOME" | "EXPENSE" | "TRANSFER" | "ASSET_PURCHASE";
+            /** Format: date */
+            eventDate: string;
+            amount: components["schemas"]["PositiveDecimalAmount"];
+            /** Format: uuid */
+            idempotencyKey: string;
+            description?: string;
+            /**
+             * Format: uuid
+             * @description Required for opening balance, income, and expense.
+             */
+            accountId?: string;
+            /**
+             * Format: uuid
+             * @description Required for income and expense.
+             */
+            categoryId?: string;
+            /**
+             * Format: uuid
+             * @description Required for transfer and asset purchase.
+             */
+            sourceAccountId?: string;
+            /**
+             * Format: uuid
+             * @description Required for transfer and asset purchase.
+             */
+            destinationAccountId?: string;
+        };
+        TransactionListResponse: {
+            transactions: components["schemas"]["Transaction"][];
+            nextCursor?: string;
+        };
+        Transaction: {
+            /** Format: uuid */
+            id: string;
+            type: components["schemas"]["TransactionType"];
+            /** Format: date */
+            eventDate: string;
+            description?: string;
+            amount: components["schemas"]["PositiveDecimalAmount"];
+            currency: components["schemas"]["Currency"];
+            primaryAccountName: string;
+            /** Format: uuid */
+            primaryAccountId?: string;
+            counterpartyName?: string;
+            /** Format: uuid */
+            counterpartyAccountId?: string;
+            categoryName?: string;
+            /** Format: uuid */
+            categoryId?: string;
+            /** @enum {string} */
+            status: "POSTED" | "REVERSED" | "REVERSAL" | "REPLACED";
+            /** Format: uuid */
+            reversesTransactionId?: string;
+            /** Format: uuid */
+            replacesTransactionId?: string;
+            /** Format: date-time */
+            postedAt: string;
+        };
+        ReversalRequest: {
+            /** Format: uuid */
+            idempotencyKey: string;
+            description?: string;
+        };
+        ReplacementRequest: {
+            /** Format: uuid */
+            reversalIdempotencyKey: string;
+            operation: components["schemas"]["CreateTransactionRequest"];
+        };
+        ReplacementResponse: {
+            reversal: components["schemas"]["Transaction"];
+            replacement: components["schemas"]["Transaction"];
+        };
+        /** @enum {string} */
+        UserAccountClass: "ASSET" | "LIABILITY";
+        /** @enum {string} */
+        AccountSubtype: "bank" | "cash" | "brokerage" | "real_estate" | "vehicle" | "security" | "mortgage" | "loan" | "other";
+        /** @enum {string} */
+        CategoryDirection: "INCOME" | "EXPENSE";
+        /** @enum {string} */
+        TransactionType: "OPENING_BALANCE" | "INCOME" | "EXPENSE" | "TRANSFER" | "ASSET_PURCHASE" | "REVERSAL";
         Password: string;
         DecimalAmount: string;
         PositiveDecimalAmount: string;
@@ -509,7 +763,11 @@ export interface components {
             };
         };
     };
-    parameters: never;
+    parameters: {
+        AccountId: string;
+        CategoryId: string;
+        TransactionId: string;
+    };
     requestBodies: never;
     headers: never;
     pathItems: never;
@@ -959,6 +1217,283 @@ export interface operations {
             };
             400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    listAccounts: {
+        parameters: {
+            query?: {
+                includeArchived?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Owned accounts */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AccountListResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    createAccount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateAccountRequest"];
+            };
+        };
+        responses: {
+            /** @description Account created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Account"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    updateAccount: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                accountId: components["parameters"]["AccountId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateAccountRequest"];
+            };
+        };
+        responses: {
+            /** @description Account updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Account"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    listCategories: {
+        parameters: {
+            query?: {
+                includeArchived?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Owned categories */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CategoryListResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    createCategory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateCategoryRequest"];
+            };
+        };
+        responses: {
+            /** @description Category created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Category"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    updateCategory: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                categoryId: components["parameters"]["CategoryId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateCategoryRequest"];
+            };
+        };
+        responses: {
+            /** @description Category updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Category"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    listTransactions: {
+        parameters: {
+            query?: {
+                from?: string;
+                to?: string;
+                accountId?: string;
+                categoryId?: string;
+                type?: components["schemas"]["TransactionType"];
+                cursor?: string;
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Immutable operation page */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TransactionListResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    createTransaction: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateTransactionRequest"];
+            };
+        };
+        responses: {
+            /** @description Operation posted */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Transaction"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    reverseTransaction: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                transactionId: components["parameters"]["TransactionId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReversalRequest"];
+            };
+        };
+        responses: {
+            /** @description Reversal posted */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Transaction"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    replaceTransaction: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                transactionId: components["parameters"]["TransactionId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReplacementRequest"];
+            };
+        };
+        responses: {
+            /** @description Original reversed and corrected operation posted */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReplacementResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
         };
     };
