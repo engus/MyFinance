@@ -114,6 +114,10 @@ func (server *Server) CompleteOnboarding(writer http.ResponseWriter, request *ht
 		server.writeLedgerError(writer, request, err)
 		return
 	}
+	if err := materializeOnboardingRecurring(request.Context(), tx, authenticated.userID, functionalCurrency); err != nil {
+		server.writeLedgerError(writer, request, err)
+		return
+	}
 	writeAuthAudit(request.Context(), queries, request, authenticated.userID, "onboarding_completed", true, map[string]string{
 		"recurring_income": boolString(payload.RecurringIncome != nil),
 	})

@@ -416,6 +416,92 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/recurring-templates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List owned recurring operation templates */
+        get: operations["listRecurringTemplates"];
+        put?: never;
+        /** Create a typed recurring operation template */
+        post: operations["createRecurringTemplate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/recurring-templates/{templateId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Edit, pause, resume, archive, or restore a recurring template */
+        patch: operations["updateRecurringTemplate"];
+        trace?: never;
+    };
+    "/api/v1/reconciliation/status": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Return the reminder window and per-account completion for one month */
+        get: operations["getReconciliationStatus"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/reconciliation/prepare": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Preview in CONFIRM mode or atomically apply in AUTO mode */
+        post: operations["prepareReconciliation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/reconciliation/previews/{previewId}/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Revalidate a reconciliation preview and apply it atomically */
+        post: operations["confirmReconciliation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -681,6 +767,174 @@ export interface components {
             reversal: components["schemas"]["Transaction"];
             replacement: components["schemas"]["Transaction"];
         };
+        RecurringTemplateListResponse: {
+            templates: components["schemas"]["RecurringTemplate"][];
+        };
+        RecurringTemplate: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            type: components["schemas"]["RecurringOperationType"];
+            amount: components["schemas"]["PositiveDecimalAmount"];
+            currency: components["schemas"]["Currency"];
+            description?: string;
+            /** Format: uuid */
+            accountId?: string;
+            accountName?: string;
+            /** Format: uuid */
+            categoryId?: string;
+            categoryName?: string;
+            /** Format: uuid */
+            sourceAccountId?: string;
+            sourceAccountName?: string;
+            /** Format: uuid */
+            destinationAccountId?: string;
+            destinationAccountName?: string;
+            frequency: components["schemas"]["RecurringFrequency"];
+            intervalUnit: components["schemas"]["RecurringIntervalUnit"];
+            intervalCount: number;
+            /** Format: date */
+            startDate: string;
+            /** Format: date */
+            nextScheduledDate: string;
+            /** Format: date */
+            endDate?: string;
+            /** Format: date */
+            lastGeneratedDate?: string;
+            status: components["schemas"]["RecurringTemplateStatus"];
+            pauseReason?: string;
+            archived: boolean;
+        };
+        CreateRecurringTemplateRequest: {
+            name: string;
+            type: components["schemas"]["RecurringOperationType"];
+            amount: components["schemas"]["PositiveDecimalAmount"];
+            description?: string;
+            /** Format: uuid */
+            accountId?: string;
+            /** Format: uuid */
+            categoryId?: string;
+            /** Format: uuid */
+            sourceAccountId?: string;
+            /** Format: uuid */
+            destinationAccountId?: string;
+            frequency: components["schemas"]["RecurringFrequency"];
+            intervalUnit?: components["schemas"]["RecurringIntervalUnit"];
+            intervalCount?: number;
+            /** Format: date */
+            startDate: string;
+            /** Format: date */
+            endDate?: string;
+        };
+        UpdateRecurringTemplateRequest: {
+            name?: string;
+            amount?: components["schemas"]["PositiveDecimalAmount"];
+            description?: string;
+            /** Format: date */
+            endDate?: string;
+            status?: components["schemas"]["RecurringTemplateStatus"];
+            archived?: boolean;
+        };
+        ReconciliationStatus: {
+            /** Format: date */
+            today: string;
+            /** Format: date */
+            suggestedPeriodEnd: string;
+            /** Format: date */
+            periodEnd: string;
+            promptOpen: boolean;
+            /** Format: date */
+            promptStart: string;
+            /** Format: date */
+            promptEnd: string;
+            complete: boolean;
+            accounts: components["schemas"]["AccountReconciliationStatus"][];
+        };
+        AccountReconciliationStatus: {
+            /** Format: uuid */
+            accountId: string;
+            accountName: string;
+            currency: components["schemas"]["Currency"];
+            ledgerBalance: components["schemas"]["DecimalAmount"];
+            /** @enum {string} */
+            status: "PENDING" | "RECONCILED";
+            reportedBalance?: components["schemas"]["DecimalAmount"];
+            difference?: components["schemas"]["DecimalAmount"];
+            /** Format: uuid */
+            reconciliationId?: string;
+            /** Format: date */
+            lastReconciledPeriodEnd?: string;
+            gapMonths: number;
+            multiMonthGap: boolean;
+        };
+        PrepareReconciliationRequest: {
+            /** Format: uuid */
+            accountId: string;
+            /** Format: date */
+            periodEnd: string;
+            reportedBalance: components["schemas"]["DecimalAmount"];
+            /** Format: uuid */
+            idempotencyKey: string;
+        };
+        ReconciliationSubmissionResponse: {
+            /** @enum {string} */
+            outcome: "PREVIEW" | "APPLIED";
+            preview?: components["schemas"]["ReconciliationPreview"];
+            reconciliation?: components["schemas"]["Reconciliation"];
+        };
+        ReconciliationPreview: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            accountId: string;
+            accountName: string;
+            currency: components["schemas"]["Currency"];
+            /** Format: date */
+            periodEnd: string;
+            reportedBalance: components["schemas"]["DecimalAmount"];
+            ledgerBalance: components["schemas"]["DecimalAmount"];
+            difference: components["schemas"]["DecimalAmount"];
+            /** @enum {string} */
+            direction: "OTHER_INCOME" | "OTHER_EXPENSE" | "NONE";
+            gapMonths: number;
+            multiMonthGap: boolean;
+            /** Format: date-time */
+            expiresAt: string;
+        };
+        Reconciliation: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            accountId: string;
+            accountName: string;
+            currency: components["schemas"]["Currency"];
+            /** Format: date */
+            periodEnd: string;
+            reportedBalance: components["schemas"]["DecimalAmount"];
+            ledgerBalanceBefore: components["schemas"]["DecimalAmount"];
+            difference: components["schemas"]["DecimalAmount"];
+            adjustmentAmount: components["schemas"]["DecimalAmount"];
+            /** Format: uuid */
+            adjustmentTransactionId?: string;
+            /** Format: uuid */
+            reversalTransactionId?: string;
+            /** Format: uuid */
+            supersedesReconciliationId?: string;
+            /** Format: date */
+            gapStartPeriodEnd?: string;
+            gapMonths: number;
+            multiMonthGap: boolean;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        /** @enum {string} */
+        RecurringOperationType: "INCOME" | "EXPENSE" | "TRANSFER" | "ASSET_PURCHASE";
+        /** @enum {string} */
+        RecurringFrequency: "WEEKLY" | "MONTHLY" | "QUARTERLY" | "YEARLY" | "CUSTOM";
+        /** @enum {string} */
+        RecurringIntervalUnit: "DAYS" | "WEEKS" | "MONTHS" | "YEARS";
+        /** @enum {string} */
+        RecurringTemplateStatus: "ACTIVE" | "PAUSED";
         /** @enum {string} */
         UserAccountClass: "ASSET" | "LIABILITY";
         /** @enum {string} */
@@ -688,7 +942,7 @@ export interface components {
         /** @enum {string} */
         CategoryDirection: "INCOME" | "EXPENSE";
         /** @enum {string} */
-        TransactionType: "OPENING_BALANCE" | "INCOME" | "EXPENSE" | "TRANSFER" | "ASSET_PURCHASE" | "REVERSAL";
+        TransactionType: "OPENING_BALANCE" | "INCOME" | "EXPENSE" | "TRANSFER" | "ASSET_PURCHASE" | "RECONCILIATION" | "REVERSAL";
         Password: string;
         DecimalAmount: string;
         PositiveDecimalAmount: string;
@@ -767,6 +1021,8 @@ export interface components {
         AccountId: string;
         CategoryId: string;
         TransactionId: string;
+        TemplateId: string;
+        PreviewId: string;
     };
     requestBodies: never;
     headers: never;
@@ -1492,6 +1748,163 @@ export interface operations {
                 };
             };
             400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    listRecurringTemplates: {
+        parameters: {
+            query?: {
+                includeArchived?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Recurring templates */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecurringTemplateListResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    createRecurringTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateRecurringTemplateRequest"];
+            };
+        };
+        responses: {
+            /** @description Recurring template created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecurringTemplate"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    updateRecurringTemplate: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                templateId: components["parameters"]["TemplateId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateRecurringTemplateRequest"];
+            };
+        };
+        responses: {
+            /** @description Recurring template updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecurringTemplate"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    getReconciliationStatus: {
+        parameters: {
+            query?: {
+                periodEnd?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Reconciliation status */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReconciliationStatus"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    prepareReconciliation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PrepareReconciliationRequest"];
+            };
+        };
+        responses: {
+            /** @description Preview created or reconciliation applied */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReconciliationSubmissionResponse"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    confirmReconciliation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                previewId: components["parameters"]["PreviewId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Reconciliation applied */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Reconciliation"];
+                };
+            };
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];

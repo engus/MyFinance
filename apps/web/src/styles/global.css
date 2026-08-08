@@ -576,6 +576,39 @@ a {
   padding: 30px 34px 54px;
 }
 
+.reconciliation-reminder {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 18px;
+  padding: 14px 16px;
+  border: 1px solid color-mix(in srgb, var(--color-warning) 28%, var(--color-line));
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--color-warning-soft) 72%, white);
+  box-shadow: 0 5px 16px rgb(30 35 74 / 5%);
+}
+
+.reconciliation-reminder strong,
+.reconciliation-reminder span {
+  display: block;
+}
+
+.reconciliation-reminder strong {
+  font-size: 13px;
+}
+
+.reconciliation-reminder span {
+  margin-top: 3px;
+  color: var(--color-muted);
+  font-size: 11px;
+}
+
+.reconciliation-reminder .button {
+  flex: 0 0 auto;
+  text-decoration: none;
+}
+
 .page-stack {
   display: grid;
   gap: 18px;
@@ -1001,7 +1034,12 @@ a {
 }
 
 .cashflow-page {
+  min-width: 0;
   gap: 20px;
+}
+
+.cashflow-page > * {
+  min-width: 0;
 }
 
 .cashflow-hero {
@@ -1097,9 +1135,11 @@ a {
   border: 1px solid var(--color-line);
   border-radius: 13px;
   background: var(--color-surface-soft);
+  overflow-x: auto;
 }
 
 .segmented-tabs button {
+  flex: 0 0 auto;
   min-height: 38px;
   padding: 8px 16px;
   border: 0;
@@ -1109,6 +1149,7 @@ a {
   font-size: 12px;
   font-weight: 760;
   cursor: pointer;
+  white-space: nowrap;
 }
 
 .segmented-tabs button.active {
@@ -1254,6 +1295,11 @@ a {
 .operation-asset_purchase {
   color: var(--color-negative);
   background: var(--color-negative-soft);
+}
+
+.operation-reconciliation {
+  color: var(--color-warning);
+  background: var(--color-warning-soft);
 }
 
 .amount-positive {
@@ -1424,6 +1470,234 @@ a {
   align-self: end;
 }
 
+.feature-stack {
+  display: grid;
+  gap: 16px;
+}
+
+.feature-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 2px 2px 4px;
+}
+
+.feature-heading h3,
+.feature-heading p,
+.template-card h4,
+.template-card p,
+.reconciliation-account-card h4 {
+  margin: 0;
+}
+
+.feature-heading h3 {
+  font-size: 21px;
+  letter-spacing: -0.035em;
+}
+
+.feature-heading p {
+  max-width: 660px;
+  margin-top: 5px;
+  color: var(--color-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.compact-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--color-muted);
+  font-size: 11px;
+  font-weight: 680;
+}
+
+.recurring-grid,
+.reconciliation-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.template-card,
+.reconciliation-account-card {
+  display: grid;
+  gap: 16px;
+}
+
+.template-muted {
+  opacity: 0.68;
+}
+
+.template-heading,
+.reconciliation-account-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.template-heading h4,
+.reconciliation-account-heading h4 {
+  margin-top: 8px;
+  font-size: 15px;
+}
+
+.template-heading p {
+  margin-top: 4px;
+  color: var(--color-muted);
+  font-size: 11px;
+}
+
+.template-heading > strong,
+.reconciliation-account-heading > strong {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.status-pill {
+  width: max-content;
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  color: var(--color-muted);
+  background: var(--color-surface-soft);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+}
+
+.status-active,
+.status-reconciled {
+  color: var(--color-positive);
+  background: var(--color-positive-soft);
+}
+
+.status-paused,
+.status-pending {
+  color: var(--color-warning);
+  background: var(--color-warning-soft);
+}
+
+.template-dates,
+.reconciliation-values {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+}
+
+.template-dates > div,
+.reconciliation-values > div {
+  padding: 10px 11px;
+  border-radius: 10px;
+  background: var(--color-surface-soft);
+}
+
+.template-dates dt,
+.reconciliation-values dt {
+  color: var(--color-muted);
+  font-size: 9px;
+  font-weight: 740;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.template-dates dd,
+.reconciliation-values dd {
+  margin: 5px 0 0;
+  font-size: 11px;
+  font-weight: 720;
+  font-variant-numeric: tabular-nums;
+}
+
+.template-actions {
+  padding-top: 2px;
+  border-top: 1px solid var(--color-line);
+}
+
+.inline-warning {
+  margin: 0;
+  padding: 9px 11px;
+  border-radius: 9px;
+  color: color-mix(in srgb, var(--color-warning) 72%, var(--color-ink));
+  background: var(--color-warning-soft);
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.reconciliation-heading {
+  align-items: center;
+}
+
+.month-picker {
+  width: 170px;
+  flex: 0 0 auto;
+}
+
+.period-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  border-color: color-mix(in srgb, var(--color-warning) 24%, var(--color-line));
+}
+
+.period-status strong,
+.period-status p {
+  display: block;
+  margin: 5px 0 0;
+}
+
+.period-status p {
+  color: var(--color-muted);
+  font-size: 11px;
+}
+
+.period-complete {
+  border-color: color-mix(in srgb, var(--color-positive) 25%, var(--color-line));
+  background: color-mix(in srgb, var(--color-positive-soft) 35%, white);
+}
+
+.period-count {
+  width: 58px;
+  height: 58px;
+  display: grid;
+  place-items: center;
+  border-radius: 18px;
+  color: var(--color-brand);
+  background: var(--color-brand-soft);
+  font-size: 16px;
+  font-weight: 820;
+}
+
+.reconciliation-values {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.reconciliation-account-card > .button {
+  justify-self: end;
+}
+
+.reconciliation-preview {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid color-mix(in srgb, var(--color-brand) 18%, var(--color-line));
+  border-radius: 13px;
+  background: var(--color-brand-soft);
+}
+
+.reconciliation-preview > strong {
+  font-size: 15px;
+}
+
 @media (max-width: 1050px) {
   .metric-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1438,6 +1712,11 @@ a {
   }
 
   .management-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .recurring-grid,
+  .reconciliation-grid {
     grid-template-columns: 1fr;
   }
 }
@@ -1535,6 +1814,11 @@ a {
     display: flex;
     overflow-x: auto;
     scroll-snap-type: x mandatory;
+  }
+
+  .segmented-tabs {
+    width: 100%;
+    min-width: 0;
   }
 
   .balance-chip {
@@ -1666,6 +1950,30 @@ a {
 
   .recovery-codes ul {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 620px) {
+  .reconciliation-reminder,
+  .feature-heading,
+  .reconciliation-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .reconciliation-reminder .button,
+  .feature-heading .button,
+  .month-picker {
+    width: 100%;
+  }
+
+  .reconciliation-values {
+    grid-template-columns: 1fr;
+  }
+
+  .template-actions {
+    flex-wrap: wrap;
+    justify-content: flex-start;
   }
 }
 

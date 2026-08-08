@@ -182,6 +182,16 @@ func TestIdentityOwnershipOnboardingAndDeletionIntegration(t *testing.T) {
 	if !onboarding.User.OnboardingCompleted || onboarding.User.FunctionalCurrency != api.KZT {
 		t.Fatalf("unexpected onboarding user: %#v", onboarding.User)
 	}
+	response = suite.request(http.MethodGet, "/api/v1/recurring-templates", nil)
+	if response.StatusCode != http.StatusOK {
+		content, _ := io.ReadAll(response.Body)
+		_ = response.Body.Close()
+		t.Fatalf("list onboarding recurring template: expected 200, got %d: %s", response.StatusCode, content)
+	}
+	templates := integrationBody[api.RecurringTemplateListResponse](t, response).Templates
+	if len(templates) != 1 || templates[0].Name != "Salary" || templates[0].Amount != "850000.50000000" || templates[0].Frequency != api.MONTHLY {
+		t.Fatalf("onboarding recurring income was not materialized: %#v", templates)
+	}
 
 	expectStatus(t, suite.request(http.MethodPost, "/api/v1/onboarding/complete", map[string]any{
 		"timezone":           "UTC",

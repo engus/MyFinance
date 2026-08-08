@@ -4,9 +4,9 @@ MyFinance is a privacy-conscious personal finance web application for understand
 worth without recording every purchase. The application is being rebuilt milestone by milestone from
 the specification in [`promt.md`](promt.md) and the delivery plan in [`plan.md`](plan.md).
 
-This branch contains the immutable ledger and Cashflow milestone on top of identity and onboarding:
-typed financial operations, exact-decimal balances, reversal-based corrections, account/category
-management, filtered history, and the approved Calm Ledger interface.
+This branch adds recurring operations and account reconciliation on top of the immutable ledger:
+timezone-aware generation, duplicate protection, month-end balance previews, safe replacement by
+reversal, completion tracking, and the approved Calm Ledger interface on desktop and mobile.
 
 ## Start locally
 
@@ -38,8 +38,8 @@ hash rather than the plaintext password. Browser sessions are stored in PostgreS
 and delivered through an HttpOnly, SameSite cookie.
 
 The idempotent seed creates two accounts plus posted demo operations for a `12,450.75 USD` opening
-balance, salary, rent, groceries, and a savings transfer. Re-running the seed creates no duplicate
-transactions.
+balance, salary, rent, groceries, and a savings transfer. It also creates monthly salary and rent
+templates and completed prior-month balance snapshots. Re-running the seed creates no duplicates.
 
 | Service         | Local address                               |
 | --------------- | ------------------------------------------- |
@@ -98,11 +98,12 @@ pages_preview/     Approved and historical visual references
 
 ## Current milestone boundary
 
-Milestone 3 implements immutable balanced transactions, accounts and categories, typed opening
-balance/income/expense/transfer/asset-purchase operations, cursor-filtered Cashflow history, and
-reversal-based correction. Onboarding now posts its opening transaction atomically.
+Milestone 4 implements recurring templates and a lock-safe worker, partial account reconciliation,
+the soft month-end reminder window, multi-month gap disclosure, confirmation previews, atomic AUTO
+mode, and reversal-based corrections. Reconciliation derives only aggregate Other Income or Other
+Expense and never invents detailed categories.
 
-Recurring generation and reconciliation are next. Different-currency transactions remain explicit
-`fx_rate_unavailable` conflicts until the dated FX cache is connected; no rate is guessed. Manual
-asset valuation snapshots arrive later, while automatic security quotes and liabilities remain out
-of v1.
+Different-currency transactions remain explicit `fx_rate_unavailable` conflicts until the dated FX
+cache is connected; no rate is guessed. Manual asset valuation snapshots arrive in Milestone 5,
+including user-entered monthly securities-portfolio values. Automatic security quotes and
+liabilities remain out of v1.

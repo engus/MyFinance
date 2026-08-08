@@ -1,5 +1,7 @@
-import { NavLink, Outlet, useLocation } from "react-router-dom";
+import { useQuery } from "@tanstack/react-query";
+import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 
+import { getReconciliationStatus } from "../api/client";
 import { useAuth } from "../auth/useAuth";
 import { en } from "../i18n/en";
 import { Button } from "./Button";
@@ -18,6 +20,10 @@ function pageTitle(pathname: string) {
 export function AppShell() {
   const location = useLocation();
   const { logout, user } = useAuth();
+  const reconciliationQuery = useQuery({
+    queryKey: ["reconciliation-status", "suggested"],
+    queryFn: () => getReconciliationStatus(),
+  });
   const initials = user?.displayName
     .split(/\s+/)
     .map((part) => part[0])
@@ -67,6 +73,24 @@ export function AppShell() {
           </div>
         </header>
         <main className="page-content">
+          {reconciliationQuery.data?.promptOpen && !reconciliationQuery.data.complete ? (
+            <aside className="reconciliation-reminder" aria-label={en.reconciliation.reminderTitle}>
+              <div>
+                <strong>{en.reconciliation.reminderTitle}</strong>
+                <span>
+                  {en.reconciliation.reminderDescription(
+                    reconciliationQuery.data.periodEnd,
+                    reconciliationQuery.data.accounts.filter(
+                      (account) => account.status === "PENDING",
+                    ).length,
+                  )}
+                </span>
+              </div>
+              <Link className="button button-primary" to="/cashflow?tab=reconciliation">
+                {en.reconciliation.updateBalances}
+              </Link>
+            </aside>
+          ) : null}
           <Outlet />
         </main>
       </div>

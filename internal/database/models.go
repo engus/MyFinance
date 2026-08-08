@@ -25,6 +25,18 @@ type AuthAuditEvent struct {
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
 }
 
+// Reported account balances captured by completed reconciliation.
+type BalanceSnapshot struct {
+	ID               pgtype.UUID        `json:"id"`
+	UserID           pgtype.UUID        `json:"user_id"`
+	AccountID        pgtype.UUID        `json:"account_id"`
+	ReconciliationID pgtype.UUID        `json:"reconciliation_id"`
+	PeriodEnd        pgtype.Date        `json:"period_end"`
+	ReportedBalance  pgtype.Numeric     `json:"reported_balance"`
+	Currency         string             `json:"currency"`
+	CreatedAt        pgtype.Timestamptz `json:"created_at"`
+}
+
 type Category struct {
 	ID              pgtype.UUID        `json:"id"`
 	UserID          pgtype.UUID        `json:"user_id"`
@@ -119,12 +131,83 @@ type OnboardingRecurringIncomeSetup struct {
 	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
 }
 
+type Reconciliation struct {
+	ID                         pgtype.UUID        `json:"id"`
+	UserID                     pgtype.UUID        `json:"user_id"`
+	AccountID                  pgtype.UUID        `json:"account_id"`
+	PeriodEnd                  pgtype.Date        `json:"period_end"`
+	ReportedBalance            pgtype.Numeric     `json:"reported_balance"`
+	LedgerBalanceBefore        pgtype.Numeric     `json:"ledger_balance_before"`
+	NetDifference              pgtype.Numeric     `json:"net_difference"`
+	AdjustmentAmount           pgtype.Numeric     `json:"adjustment_amount"`
+	AdjustmentTransactionID    pgtype.UUID        `json:"adjustment_transaction_id"`
+	ReversalTransactionID      pgtype.UUID        `json:"reversal_transaction_id"`
+	SupersedesReconciliationID pgtype.UUID        `json:"supersedes_reconciliation_id"`
+	GapStartPeriodEnd          pgtype.Date        `json:"gap_start_period_end"`
+	GapMonths                  int32              `json:"gap_months"`
+	IdempotencyKey             pgtype.UUID        `json:"idempotency_key"`
+	SupersededAt               pgtype.Timestamptz `json:"superseded_at"`
+	CreatedAt                  pgtype.Timestamptz `json:"created_at"`
+}
+
+// Short-lived optimistic previews revalidated under an account lock before confirmation.
+type ReconciliationPreview struct {
+	ID                        pgtype.UUID        `json:"id"`
+	UserID                    pgtype.UUID        `json:"user_id"`
+	AccountID                 pgtype.UUID        `json:"account_id"`
+	PeriodEnd                 pgtype.Date        `json:"period_end"`
+	ReportedBalance           pgtype.Numeric     `json:"reported_balance"`
+	LedgerBalance             pgtype.Numeric     `json:"ledger_balance"`
+	NetDifference             pgtype.Numeric     `json:"net_difference"`
+	IdempotencyKey            pgtype.UUID        `json:"idempotency_key"`
+	CurrentReconciliationID   pgtype.UUID        `json:"current_reconciliation_id"`
+	ConfirmedReconciliationID pgtype.UUID        `json:"confirmed_reconciliation_id"`
+	CreatedAt                 pgtype.Timestamptz `json:"created_at"`
+	ExpiresAt                 pgtype.Timestamptz `json:"expires_at"`
+	ConfirmedAt               pgtype.Timestamptz `json:"confirmed_at"`
+}
+
 type RecoveryCode struct {
 	ID        pgtype.UUID        `json:"id"`
 	UserID    pgtype.UUID        `json:"user_id"`
 	CodeHash  []byte             `json:"code_hash"`
 	UsedAt    pgtype.Timestamptz `json:"used_at"`
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
+}
+
+// One immutable generation claim per template and scheduled financial date.
+type RecurringOccurrence struct {
+	ID            pgtype.UUID        `json:"id"`
+	UserID        pgtype.UUID        `json:"user_id"`
+	TemplateID    pgtype.UUID        `json:"template_id"`
+	ScheduledDate pgtype.Date        `json:"scheduled_date"`
+	TransactionID pgtype.UUID        `json:"transaction_id"`
+	CreatedAt     pgtype.Timestamptz `json:"created_at"`
+}
+
+type RecurringTemplate struct {
+	ID                   pgtype.UUID        `json:"id"`
+	UserID               pgtype.UUID        `json:"user_id"`
+	Name                 string             `json:"name"`
+	OperationType        string             `json:"operation_type"`
+	Amount               pgtype.Numeric     `json:"amount"`
+	Currency             string             `json:"currency"`
+	Description          pgtype.Text        `json:"description"`
+	AccountID            pgtype.UUID        `json:"account_id"`
+	CategoryID           pgtype.UUID        `json:"category_id"`
+	SourceAccountID      pgtype.UUID        `json:"source_account_id"`
+	DestinationAccountID pgtype.UUID        `json:"destination_account_id"`
+	Frequency            string             `json:"frequency"`
+	IntervalUnit         string             `json:"interval_unit"`
+	IntervalCount        int32              `json:"interval_count"`
+	StartDate            pgtype.Date        `json:"start_date"`
+	NextScheduledDate    pgtype.Date        `json:"next_scheduled_date"`
+	EndDate              pgtype.Date        `json:"end_date"`
+	Status               string             `json:"status"`
+	PauseReason          pgtype.Text        `json:"pause_reason"`
+	ArchivedAt           pgtype.Timestamptz `json:"archived_at"`
+	CreatedAt            pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt            pgtype.Timestamptz `json:"updated_at"`
 }
 
 // Database-backed sessions; only a SHA-256 digest of the browser token is stored.

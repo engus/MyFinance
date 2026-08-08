@@ -574,6 +574,9 @@ func (server *Server) ensureLedger(ctx context.Context, userID pgtype.UUID) erro
 		       )
 		   AND NOT EXISTS (
 		           SELECT 1 FROM onboarding_account_setups WHERE user_id = $1 AND ledger_posted_at IS NULL
+		       )
+		   AND NOT EXISTS (
+		           SELECT 1 FROM onboarding_recurring_income_setups WHERE user_id = $1 AND materialized_at IS NULL
 		       )`, userID).Scan(&ready); err != nil {
 		return err
 	}
@@ -590,6 +593,9 @@ func (server *Server) ensureLedger(ctx context.Context, userID pgtype.UUID) erro
 		return err
 	}
 	if err := materializeOnboardingAccount(ctx, tx, userID, functionalCurrency, openingEquityID); err != nil {
+		return err
+	}
+	if err := materializeOnboardingRecurring(ctx, tx, userID, functionalCurrency); err != nil {
 		return err
 	}
 	return tx.Commit(ctx)
@@ -1140,6 +1146,9 @@ func decodeLedgerCursor(cursor string) (time.Time, uuid.UUID, error) {
 }
 
 func (server *Server) writeLedgerError(writer http.ResponseWriter, request *http.Request, err error) {
+	if server.writeReconciliationError(writer, request, err) {
+		return
+	}
 	if errors.Is(err, errLedgerNotFound) {
 		writeError(writer, http.StatusNotFound, "not_found", "The requested resource was not found.")
 		return

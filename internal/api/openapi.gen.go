@@ -21,6 +21,24 @@ import (
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
+// Defines values for AccountReconciliationStatusStatus.
+const (
+	PENDING    AccountReconciliationStatusStatus = "PENDING"
+	RECONCILED AccountReconciliationStatusStatus = "RECONCILED"
+)
+
+// Valid indicates whether the value is a known member of the AccountReconciliationStatusStatus enum.
+func (e AccountReconciliationStatusStatus) Valid() bool {
+	switch e {
+	case PENDING:
+		return true
+	case RECONCILED:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for AccountSubtype.
 const (
 	AccountSubtypeBank       AccountSubtype = "bank"
@@ -294,6 +312,138 @@ func (e ReconciliationMode) Valid() bool {
 	}
 }
 
+// Defines values for ReconciliationPreviewDirection.
+const (
+	NONE         ReconciliationPreviewDirection = "NONE"
+	OTHEREXPENSE ReconciliationPreviewDirection = "OTHER_EXPENSE"
+	OTHERINCOME  ReconciliationPreviewDirection = "OTHER_INCOME"
+)
+
+// Valid indicates whether the value is a known member of the ReconciliationPreviewDirection enum.
+func (e ReconciliationPreviewDirection) Valid() bool {
+	switch e {
+	case NONE:
+		return true
+	case OTHEREXPENSE:
+		return true
+	case OTHERINCOME:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ReconciliationSubmissionResponseOutcome.
+const (
+	APPLIED ReconciliationSubmissionResponseOutcome = "APPLIED"
+	PREVIEW ReconciliationSubmissionResponseOutcome = "PREVIEW"
+)
+
+// Valid indicates whether the value is a known member of the ReconciliationSubmissionResponseOutcome enum.
+func (e ReconciliationSubmissionResponseOutcome) Valid() bool {
+	switch e {
+	case APPLIED:
+		return true
+	case PREVIEW:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RecurringFrequency.
+const (
+	CUSTOM    RecurringFrequency = "CUSTOM"
+	MONTHLY   RecurringFrequency = "MONTHLY"
+	QUARTERLY RecurringFrequency = "QUARTERLY"
+	WEEKLY    RecurringFrequency = "WEEKLY"
+	YEARLY    RecurringFrequency = "YEARLY"
+)
+
+// Valid indicates whether the value is a known member of the RecurringFrequency enum.
+func (e RecurringFrequency) Valid() bool {
+	switch e {
+	case CUSTOM:
+		return true
+	case MONTHLY:
+		return true
+	case QUARTERLY:
+		return true
+	case WEEKLY:
+		return true
+	case YEARLY:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RecurringIntervalUnit.
+const (
+	DAYS   RecurringIntervalUnit = "DAYS"
+	MONTHS RecurringIntervalUnit = "MONTHS"
+	WEEKS  RecurringIntervalUnit = "WEEKS"
+	YEARS  RecurringIntervalUnit = "YEARS"
+)
+
+// Valid indicates whether the value is a known member of the RecurringIntervalUnit enum.
+func (e RecurringIntervalUnit) Valid() bool {
+	switch e {
+	case DAYS:
+		return true
+	case MONTHS:
+		return true
+	case WEEKS:
+		return true
+	case YEARS:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RecurringOperationType.
+const (
+	RecurringOperationTypeASSETPURCHASE RecurringOperationType = "ASSET_PURCHASE"
+	RecurringOperationTypeEXPENSE       RecurringOperationType = "EXPENSE"
+	RecurringOperationTypeINCOME        RecurringOperationType = "INCOME"
+	RecurringOperationTypeTRANSFER      RecurringOperationType = "TRANSFER"
+)
+
+// Valid indicates whether the value is a known member of the RecurringOperationType enum.
+func (e RecurringOperationType) Valid() bool {
+	switch e {
+	case RecurringOperationTypeASSETPURCHASE:
+		return true
+	case RecurringOperationTypeEXPENSE:
+		return true
+	case RecurringOperationTypeINCOME:
+		return true
+	case RecurringOperationTypeTRANSFER:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for RecurringTemplateStatus.
+const (
+	ACTIVE RecurringTemplateStatus = "ACTIVE"
+	PAUSED RecurringTemplateStatus = "PAUSED"
+)
+
+// Valid indicates whether the value is a known member of the RecurringTemplateStatus enum.
+func (e RecurringTemplateStatus) Valid() bool {
+	switch e {
+	case ACTIVE:
+		return true
+	case PAUSED:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for TransactionStatus.
 const (
 	TransactionStatusPOSTED   TransactionStatus = "POSTED"
@@ -324,6 +474,7 @@ const (
 	TransactionTypeEXPENSE        TransactionType = "EXPENSE"
 	TransactionTypeINCOME         TransactionType = "INCOME"
 	TransactionTypeOPENINGBALANCE TransactionType = "OPENING_BALANCE"
+	TransactionTypeRECONCILIATION TransactionType = "RECONCILIATION"
 	TransactionTypeREVERSAL       TransactionType = "REVERSAL"
 	TransactionTypeTRANSFER       TransactionType = "TRANSFER"
 )
@@ -338,6 +489,8 @@ func (e TransactionType) Valid() bool {
 	case TransactionTypeINCOME:
 		return true
 	case TransactionTypeOPENINGBALANCE:
+		return true
+	case TransactionTypeRECONCILIATION:
 		return true
 	case TransactionTypeREVERSAL:
 		return true
@@ -382,6 +535,24 @@ type Account struct {
 type AccountListResponse struct {
 	Accounts []Account `json:"accounts"`
 }
+
+// AccountReconciliationStatus defines model for AccountReconciliationStatus.
+type AccountReconciliationStatus struct {
+	AccountId               openapi_types.UUID                `json:"accountId"`
+	AccountName             string                            `json:"accountName"`
+	Currency                Currency                          `json:"currency"`
+	Difference              *DecimalAmount                    `json:"difference,omitempty"`
+	GapMonths               int                               `json:"gapMonths"`
+	LastReconciledPeriodEnd *openapi_types.Date               `json:"lastReconciledPeriodEnd,omitempty"`
+	LedgerBalance           DecimalAmount                     `json:"ledgerBalance"`
+	MultiMonthGap           bool                              `json:"multiMonthGap"`
+	ReconciliationId        *openapi_types.UUID               `json:"reconciliationId,omitempty"`
+	ReportedBalance         *DecimalAmount                    `json:"reportedBalance,omitempty"`
+	Status                  AccountReconciliationStatusStatus `json:"status"`
+}
+
+// AccountReconciliationStatusStatus defines model for AccountReconciliationStatus.Status.
+type AccountReconciliationStatusStatus string
 
 // AccountSubtype defines model for AccountSubtype.
 type AccountSubtype string
@@ -445,6 +616,23 @@ type CreateAccountRequest struct {
 type CreateCategoryRequest struct {
 	Direction CategoryDirection `json:"direction"`
 	Name      string            `json:"name"`
+}
+
+// CreateRecurringTemplateRequest defines model for CreateRecurringTemplateRequest.
+type CreateRecurringTemplateRequest struct {
+	AccountId            *openapi_types.UUID    `json:"accountId,omitempty"`
+	Amount               PositiveDecimalAmount  `json:"amount"`
+	CategoryId           *openapi_types.UUID    `json:"categoryId,omitempty"`
+	Description          *string                `json:"description,omitempty"`
+	DestinationAccountId *openapi_types.UUID    `json:"destinationAccountId,omitempty"`
+	EndDate              *openapi_types.Date    `json:"endDate,omitempty"`
+	Frequency            RecurringFrequency     `json:"frequency"`
+	IntervalCount        *int                   `json:"intervalCount,omitempty"`
+	IntervalUnit         *RecurringIntervalUnit `json:"intervalUnit,omitempty"`
+	Name                 string                 `json:"name"`
+	SourceAccountId      *openapi_types.UUID    `json:"sourceAccountId,omitempty"`
+	StartDate            openapi_types.Date     `json:"startDate"`
+	Type                 RecurringOperationType `json:"type"`
 }
 
 // CreateTransactionRequest Typed operation contract. Raw journal entries are never accepted from clients.
@@ -546,14 +734,128 @@ type Password = string
 // PositiveDecimalAmount defines model for PositiveDecimalAmount.
 type PositiveDecimalAmount = string
 
+// PrepareReconciliationRequest defines model for PrepareReconciliationRequest.
+type PrepareReconciliationRequest struct {
+	AccountId       openapi_types.UUID `json:"accountId"`
+	IdempotencyKey  openapi_types.UUID `json:"idempotencyKey"`
+	PeriodEnd       openapi_types.Date `json:"periodEnd"`
+	ReportedBalance DecimalAmount      `json:"reportedBalance"`
+}
+
+// Reconciliation defines model for Reconciliation.
+type Reconciliation struct {
+	AccountId                  openapi_types.UUID  `json:"accountId"`
+	AccountName                string              `json:"accountName"`
+	AdjustmentAmount           DecimalAmount       `json:"adjustmentAmount"`
+	AdjustmentTransactionId    *openapi_types.UUID `json:"adjustmentTransactionId,omitempty"`
+	CreatedAt                  time.Time           `json:"createdAt"`
+	Currency                   Currency            `json:"currency"`
+	Difference                 DecimalAmount       `json:"difference"`
+	GapMonths                  int                 `json:"gapMonths"`
+	GapStartPeriodEnd          *openapi_types.Date `json:"gapStartPeriodEnd,omitempty"`
+	Id                         openapi_types.UUID  `json:"id"`
+	LedgerBalanceBefore        DecimalAmount       `json:"ledgerBalanceBefore"`
+	MultiMonthGap              bool                `json:"multiMonthGap"`
+	PeriodEnd                  openapi_types.Date  `json:"periodEnd"`
+	ReportedBalance            DecimalAmount       `json:"reportedBalance"`
+	ReversalTransactionId      *openapi_types.UUID `json:"reversalTransactionId,omitempty"`
+	SupersedesReconciliationId *openapi_types.UUID `json:"supersedesReconciliationId,omitempty"`
+}
+
 // ReconciliationMode defines model for ReconciliationMode.
 type ReconciliationMode string
+
+// ReconciliationPreview defines model for ReconciliationPreview.
+type ReconciliationPreview struct {
+	AccountId       openapi_types.UUID             `json:"accountId"`
+	AccountName     string                         `json:"accountName"`
+	Currency        Currency                       `json:"currency"`
+	Difference      DecimalAmount                  `json:"difference"`
+	Direction       ReconciliationPreviewDirection `json:"direction"`
+	ExpiresAt       time.Time                      `json:"expiresAt"`
+	GapMonths       int                            `json:"gapMonths"`
+	Id              openapi_types.UUID             `json:"id"`
+	LedgerBalance   DecimalAmount                  `json:"ledgerBalance"`
+	MultiMonthGap   bool                           `json:"multiMonthGap"`
+	PeriodEnd       openapi_types.Date             `json:"periodEnd"`
+	ReportedBalance DecimalAmount                  `json:"reportedBalance"`
+}
+
+// ReconciliationPreviewDirection defines model for ReconciliationPreview.Direction.
+type ReconciliationPreviewDirection string
+
+// ReconciliationStatus defines model for ReconciliationStatus.
+type ReconciliationStatus struct {
+	Accounts           []AccountReconciliationStatus `json:"accounts"`
+	Complete           bool                          `json:"complete"`
+	PeriodEnd          openapi_types.Date            `json:"periodEnd"`
+	PromptEnd          openapi_types.Date            `json:"promptEnd"`
+	PromptOpen         bool                          `json:"promptOpen"`
+	PromptStart        openapi_types.Date            `json:"promptStart"`
+	SuggestedPeriodEnd openapi_types.Date            `json:"suggestedPeriodEnd"`
+	Today              openapi_types.Date            `json:"today"`
+}
+
+// ReconciliationSubmissionResponse defines model for ReconciliationSubmissionResponse.
+type ReconciliationSubmissionResponse struct {
+	Outcome        ReconciliationSubmissionResponseOutcome `json:"outcome"`
+	Preview        *ReconciliationPreview                  `json:"preview,omitempty"`
+	Reconciliation *Reconciliation                         `json:"reconciliation,omitempty"`
+}
+
+// ReconciliationSubmissionResponseOutcome defines model for ReconciliationSubmissionResponse.Outcome.
+type ReconciliationSubmissionResponseOutcome string
 
 // RecoveryLoginRequest defines model for RecoveryLoginRequest.
 type RecoveryLoginRequest struct {
 	ChallengeToken string `json:"challengeToken"`
 	RecoveryCode   string `json:"recoveryCode"`
 }
+
+// RecurringFrequency defines model for RecurringFrequency.
+type RecurringFrequency string
+
+// RecurringIntervalUnit defines model for RecurringIntervalUnit.
+type RecurringIntervalUnit string
+
+// RecurringOperationType defines model for RecurringOperationType.
+type RecurringOperationType string
+
+// RecurringTemplate defines model for RecurringTemplate.
+type RecurringTemplate struct {
+	AccountId              *openapi_types.UUID     `json:"accountId,omitempty"`
+	AccountName            *string                 `json:"accountName,omitempty"`
+	Amount                 PositiveDecimalAmount   `json:"amount"`
+	Archived               bool                    `json:"archived"`
+	CategoryId             *openapi_types.UUID     `json:"categoryId,omitempty"`
+	CategoryName           *string                 `json:"categoryName,omitempty"`
+	Currency               Currency                `json:"currency"`
+	Description            *string                 `json:"description,omitempty"`
+	DestinationAccountId   *openapi_types.UUID     `json:"destinationAccountId,omitempty"`
+	DestinationAccountName *string                 `json:"destinationAccountName,omitempty"`
+	EndDate                *openapi_types.Date     `json:"endDate,omitempty"`
+	Frequency              RecurringFrequency      `json:"frequency"`
+	Id                     openapi_types.UUID      `json:"id"`
+	IntervalCount          int                     `json:"intervalCount"`
+	IntervalUnit           RecurringIntervalUnit   `json:"intervalUnit"`
+	LastGeneratedDate      *openapi_types.Date     `json:"lastGeneratedDate,omitempty"`
+	Name                   string                  `json:"name"`
+	NextScheduledDate      openapi_types.Date      `json:"nextScheduledDate"`
+	PauseReason            *string                 `json:"pauseReason,omitempty"`
+	SourceAccountId        *openapi_types.UUID     `json:"sourceAccountId,omitempty"`
+	SourceAccountName      *string                 `json:"sourceAccountName,omitempty"`
+	StartDate              openapi_types.Date      `json:"startDate"`
+	Status                 RecurringTemplateStatus `json:"status"`
+	Type                   RecurringOperationType  `json:"type"`
+}
+
+// RecurringTemplateListResponse defines model for RecurringTemplateListResponse.
+type RecurringTemplateListResponse struct {
+	Templates []RecurringTemplate `json:"templates"`
+}
+
+// RecurringTemplateStatus defines model for RecurringTemplateStatus.
+type RecurringTemplateStatus string
 
 // RegisterRequest defines model for RegisterRequest.
 type RegisterRequest struct {
@@ -676,6 +978,16 @@ type UpdateProfileRequest struct {
 	Email           openapi_types.Email `json:"email"`
 }
 
+// UpdateRecurringTemplateRequest defines model for UpdateRecurringTemplateRequest.
+type UpdateRecurringTemplateRequest struct {
+	Amount      *PositiveDecimalAmount   `json:"amount,omitempty"`
+	Archived    *bool                    `json:"archived,omitempty"`
+	Description *string                  `json:"description,omitempty"`
+	EndDate     *openapi_types.Date      `json:"endDate,omitempty"`
+	Name        *string                  `json:"name,omitempty"`
+	Status      *RecurringTemplateStatus `json:"status,omitempty"`
+}
+
 // UpdateUserSettingsRequest defines model for UpdateUserSettingsRequest.
 type UpdateUserSettingsRequest struct {
 	DisplayCurrency    Currency           `json:"displayCurrency"`
@@ -705,6 +1017,12 @@ type AccountId = openapi_types.UUID
 
 // CategoryId defines model for CategoryId.
 type CategoryId = openapi_types.UUID
+
+// PreviewId defines model for PreviewId.
+type PreviewId = openapi_types.UUID
+
+// TemplateId defines model for TemplateId.
+type TemplateId = openapi_types.UUID
 
 // TransactionId defines model for TransactionId.
 type TransactionId = openapi_types.UUID
@@ -737,6 +1055,16 @@ type ListAccountsParams struct {
 
 // ListCategoriesParams defines parameters for ListCategories.
 type ListCategoriesParams struct {
+	IncludeArchived *bool `form:"includeArchived,omitempty" json:"includeArchived,omitempty"`
+}
+
+// GetReconciliationStatusParams defines parameters for GetReconciliationStatus.
+type GetReconciliationStatusParams struct {
+	PeriodEnd *openapi_types.Date `form:"periodEnd,omitempty" json:"periodEnd,omitempty"`
+}
+
+// ListRecurringTemplatesParams defines parameters for ListRecurringTemplates.
+type ListRecurringTemplatesParams struct {
 	IncludeArchived *bool `form:"includeArchived,omitempty" json:"includeArchived,omitempty"`
 }
 
@@ -783,6 +1111,15 @@ type UpdateCategoryJSONRequestBody = UpdateCategoryRequest
 
 // CompleteOnboardingJSONRequestBody defines body for CompleteOnboarding for application/json ContentType.
 type CompleteOnboardingJSONRequestBody = CompleteOnboardingRequest
+
+// PrepareReconciliationJSONRequestBody defines body for PrepareReconciliation for application/json ContentType.
+type PrepareReconciliationJSONRequestBody = PrepareReconciliationRequest
+
+// CreateRecurringTemplateJSONRequestBody defines body for CreateRecurringTemplate for application/json ContentType.
+type CreateRecurringTemplateJSONRequestBody = CreateRecurringTemplateRequest
+
+// UpdateRecurringTemplateJSONRequestBody defines body for UpdateRecurringTemplate for application/json ContentType.
+type UpdateRecurringTemplateJSONRequestBody = UpdateRecurringTemplateRequest
 
 // CreateTransactionJSONRequestBody defines body for CreateTransaction for application/json ContentType.
 type CreateTransactionJSONRequestBody = CreateTransactionRequest
@@ -867,6 +1204,24 @@ type ServerInterface interface {
 	// CompleteOnboarding Save settings, first account, opening balance, and optional recurring income atomically
 	// (POST /api/v1/onboarding/complete)
 	CompleteOnboarding(w http.ResponseWriter, r *http.Request)
+	// PrepareReconciliation Preview in CONFIRM mode or atomically apply in AUTO mode
+	// (POST /api/v1/reconciliation/prepare)
+	PrepareReconciliation(w http.ResponseWriter, r *http.Request)
+	// ConfirmReconciliation Revalidate a reconciliation preview and apply it atomically
+	// (POST /api/v1/reconciliation/previews/{previewId}/confirm)
+	ConfirmReconciliation(w http.ResponseWriter, r *http.Request, previewId PreviewId)
+	// GetReconciliationStatus Return the reminder window and per-account completion for one month
+	// (GET /api/v1/reconciliation/status)
+	GetReconciliationStatus(w http.ResponseWriter, r *http.Request, params GetReconciliationStatusParams)
+	// ListRecurringTemplates List owned recurring operation templates
+	// (GET /api/v1/recurring-templates)
+	ListRecurringTemplates(w http.ResponseWriter, r *http.Request, params ListRecurringTemplatesParams)
+	// CreateRecurringTemplate Create a typed recurring operation template
+	// (POST /api/v1/recurring-templates)
+	CreateRecurringTemplate(w http.ResponseWriter, r *http.Request)
+	// UpdateRecurringTemplate Edit, pause, resume, archive, or restore a recurring template
+	// (PATCH /api/v1/recurring-templates/{templateId})
+	UpdateRecurringTemplate(w http.ResponseWriter, r *http.Request, templateId TemplateId)
 	// ListTransactions List immutable operations using stable cursor pagination
 	// (GET /api/v1/transactions)
 	ListTransactions(w http.ResponseWriter, r *http.Request, params ListTransactionsParams)
@@ -1014,6 +1369,42 @@ func (_ Unimplemented) GetReadiness(w http.ResponseWriter, r *http.Request) {
 // CompleteOnboarding Save settings, first account, opening balance, and optional recurring income atomically
 // (POST /api/v1/onboarding/complete)
 func (_ Unimplemented) CompleteOnboarding(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// PrepareReconciliation Preview in CONFIRM mode or atomically apply in AUTO mode
+// (POST /api/v1/reconciliation/prepare)
+func (_ Unimplemented) PrepareReconciliation(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ConfirmReconciliation Revalidate a reconciliation preview and apply it atomically
+// (POST /api/v1/reconciliation/previews/{previewId}/confirm)
+func (_ Unimplemented) ConfirmReconciliation(w http.ResponseWriter, r *http.Request, previewId PreviewId) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GetReconciliationStatus Return the reminder window and per-account completion for one month
+// (GET /api/v1/reconciliation/status)
+func (_ Unimplemented) GetReconciliationStatus(w http.ResponseWriter, r *http.Request, params GetReconciliationStatusParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ListRecurringTemplates List owned recurring operation templates
+// (GET /api/v1/recurring-templates)
+func (_ Unimplemented) ListRecurringTemplates(w http.ResponseWriter, r *http.Request, params ListRecurringTemplatesParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// CreateRecurringTemplate Create a typed recurring operation template
+// (POST /api/v1/recurring-templates)
+func (_ Unimplemented) CreateRecurringTemplate(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// UpdateRecurringTemplate Edit, pause, resume, archive, or restore a recurring template
+// (PATCH /api/v1/recurring-templates/{templateId})
+func (_ Unimplemented) UpdateRecurringTemplate(w http.ResponseWriter, r *http.Request, templateId TemplateId) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -1419,6 +1810,152 @@ func (siw *ServerInterfaceWrapper) CompleteOnboarding(w http.ResponseWriter, r *
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.CompleteOnboarding(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PrepareReconciliation operation middleware
+func (siw *ServerInterfaceWrapper) PrepareReconciliation(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PrepareReconciliation(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ConfirmReconciliation operation middleware
+func (siw *ServerInterfaceWrapper) ConfirmReconciliation(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "previewId" -------------
+	var previewId PreviewId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "previewId", chi.URLParam(r, "previewId"), &previewId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "previewId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ConfirmReconciliation(w, r, previewId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetReconciliationStatus operation middleware
+func (siw *ServerInterfaceWrapper) GetReconciliationStatus(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetReconciliationStatusParams
+
+	// ------------- Optional query parameter "periodEnd" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "periodEnd", r.URL.Query(), &params.PeriodEnd, runtime.BindQueryParameterOptions{Type: "string", Format: "date"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "periodEnd"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "periodEnd", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetReconciliationStatus(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListRecurringTemplates operation middleware
+func (siw *ServerInterfaceWrapper) ListRecurringTemplates(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListRecurringTemplatesParams
+
+	// ------------- Optional query parameter "includeArchived" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "includeArchived", r.URL.Query(), &params.IncludeArchived, runtime.BindQueryParameterOptions{Type: "boolean", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "includeArchived"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "includeArchived", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListRecurringTemplates(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateRecurringTemplate operation middleware
+func (siw *ServerInterfaceWrapper) CreateRecurringTemplate(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateRecurringTemplate(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateRecurringTemplate operation middleware
+func (siw *ServerInterfaceWrapper) UpdateRecurringTemplate(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "templateId" -------------
+	var templateId TemplateId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "templateId", chi.URLParam(r, "templateId"), &templateId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "templateId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateRecurringTemplate(w, r, templateId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -1858,6 +2395,24 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/api/v1/transactions/{transactionId}/replacement", wrapper.ReplaceTransaction)
 	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/recurring-templates", wrapper.ListRecurringTemplates)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/recurring-templates", wrapper.CreateRecurringTemplate)
+	})
+	r.Group(func(r chi.Router) {
+		r.Patch(options.BaseURL+"/api/v1/recurring-templates/{templateId}", wrapper.UpdateRecurringTemplate)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/reconciliation/status", wrapper.GetReconciliationStatus)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/reconciliation/prepare", wrapper.PrepareReconciliation)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/reconciliation/previews/{previewId}/confirm", wrapper.ConfirmReconciliation)
+	})
 
 	return r
 }
@@ -1867,78 +2422,97 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 // const string: with thousands of chunks the chained `+` fold is several
 // times slower for the Go compiler than parsing a slice literal.
 var swaggerSpec = []string{
-	"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",
-	"D1ZnrmQiQnyWyQtefl7+bwAAAP//",
+	"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",
 }
 
 // decodeSpec returns the embedded OpenAPI spec as raw JSON bytes,

@@ -26,8 +26,9 @@ make db-seed
 ```
 
 The browser acceptance pass covers Dashboard, Cashflow, Assets, and Settings at 1440×1000 and
-390×844. The API readiness indicator must show `Ready`, both PostgreSQL instances must be healthy,
-and both migration jobs must exit with status zero.
+390×844. The API readiness endpoint must return a healthy response, both PostgreSQL instances must
+be healthy, and both migration jobs must exit with status zero. Infrastructure readiness is not
+shown as product content in the user interface.
 
 ## Deferred by design
 
