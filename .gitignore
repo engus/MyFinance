@@ -5,3 +5,8 @@ build/
 .env.local
 .superpowers/
 *.log
+*.tsbuildinfo
+.DS_Store
+coverage/
+playwright-report/
+test-results/

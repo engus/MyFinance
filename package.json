@@ -1,8 +1,0 @@
-{
-  "name": "myfinance",
-  "private": true,
-  "workspaces": ["apps/*"],
-  "scripts": {
-    "test": "npm run test --workspaces --if-present"
-  }
-}
