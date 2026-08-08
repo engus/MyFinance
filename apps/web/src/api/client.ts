@@ -34,6 +34,12 @@ export type Reconciliation = components["schemas"]["Reconciliation"];
 export type PrepareReconciliationRequest = components["schemas"]["PrepareReconciliationRequest"];
 export type ReconciliationSubmissionResponse =
   components["schemas"]["ReconciliationSubmissionResponse"];
+export type Asset = components["schemas"]["Asset"];
+export type AssetValuation = components["schemas"]["AssetValuation"];
+export type AssetListResponse = components["schemas"]["AssetListResponse"];
+export type CreateAssetRequest = components["schemas"]["CreateAssetRequest"];
+export type CreateAssetValuationRequest = components["schemas"]["CreateAssetValuationRequest"];
+export type UpdateAssetRequest = components["schemas"]["UpdateAssetRequest"];
 
 export class ApiError extends Error {
   readonly code: string;
@@ -303,6 +309,40 @@ export async function confirmReconciliation(previewId: string): Promise<Reconcil
     `/api/v1/reconciliation/previews/${previewId}/confirm`,
     "POST",
   )) as Reconciliation;
+}
+
+export async function listAssets(includeArchived = false): Promise<AssetListResponse> {
+  return (await jsonRequest(
+    `/api/v1/assets${includeArchived ? "?includeArchived=true" : ""}`,
+    "GET",
+  )) as AssetListResponse;
+}
+
+export async function createAsset(payload: CreateAssetRequest): Promise<Asset> {
+  return (await jsonRequest("/api/v1/assets", "POST", payload)) as Asset;
+}
+
+export async function updateAsset(assetId: string, payload: UpdateAssetRequest): Promise<Asset> {
+  return (await jsonRequest(`/api/v1/assets/${assetId}`, "PATCH", payload)) as Asset;
+}
+
+export async function listAssetValuations(assetId: string): Promise<AssetValuation[]> {
+  const response = (await jsonRequest(
+    `/api/v1/assets/${assetId}/valuations`,
+    "GET",
+  )) as components["schemas"]["AssetValuationListResponse"];
+  return response.valuations;
+}
+
+export async function createAssetValuation(
+  assetId: string,
+  payload: CreateAssetValuationRequest,
+): Promise<AssetValuation> {
+  return (await jsonRequest(
+    `/api/v1/assets/${assetId}/valuations`,
+    "POST",
+    payload,
+  )) as AssetValuation;
 }
 
 async function authMutation(path: string, method: string, body: unknown): Promise<User> {

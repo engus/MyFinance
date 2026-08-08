@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: MyFinance API
-  version: 0.3.0
+  version: 0.4.0
   description: REST contract for the MyFinance personal-finance web application.
 servers:
   - url: /api/v1
@@ -776,6 +776,139 @@ paths:
           $ref: "#/components/responses/NotFound"
         "409":
           $ref: "#/components/responses/Conflict"
+  /api/v1/assets:
+    get:
+      operationId: listAssets
+      summary: List manual asset profiles and their current owned values
+      tags: [Assets]
+      parameters:
+        - name: includeArchived
+          in: query
+          schema:
+            type: boolean
+            default: false
+      responses:
+        "200":
+          description: Asset profiles and allocation inputs
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AssetListResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      operationId: createAsset
+      summary: Create a manual asset profile and optionally post its purchase atomically
+      tags: [Assets]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateAssetRequest"
+      responses:
+        "201":
+          description: Asset profile created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Asset"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /api/v1/assets/{assetId}:
+    get:
+      operationId: getAsset
+      summary: Return one owned manual asset profile
+      tags: [Assets]
+      parameters:
+        - $ref: "#/components/parameters/AssetId"
+      responses:
+        "200":
+          description: Asset profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Asset"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      operationId: updateAsset
+      summary: Update, archive, or restore a manual asset profile
+      tags: [Assets]
+      parameters:
+        - $ref: "#/components/parameters/AssetId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateAssetRequest"
+      responses:
+        "200":
+          description: Asset profile updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Asset"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /api/v1/assets/{assetId}/valuations:
+    get:
+      operationId: listAssetValuations
+      summary: List immutable manual valuation snapshots for one asset
+      tags: [Assets]
+      parameters:
+        - $ref: "#/components/parameters/AssetId"
+      responses:
+        "200":
+          description: Asset valuation history
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AssetValuationListResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    post:
+      operationId: createAssetValuation
+      summary: Record a manual valuation and post its idempotent revaluation delta
+      tags: [Assets]
+      parameters:
+        - $ref: "#/components/parameters/AssetId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateAssetValuationRequest"
+      responses:
+        "201":
+          description: Valuation snapshot recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AssetValuation"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
 components:
   parameters:
     AccountId:
@@ -808,6 +941,13 @@ components:
         format: uuid
     PreviewId:
       name: previewId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    AssetId:
+      name: assetId
       in: path
       required: true
       schema:
@@ -1779,6 +1919,241 @@ components:
         createdAt:
           type: string
           format: date-time
+    AssetListResponse:
+      type: object
+      additionalProperties: false
+      required: [assets, totalCurrentOwnedValue, allocations]
+      properties:
+        assets:
+          type: array
+          items:
+            $ref: "#/components/schemas/Asset"
+        totalCurrentOwnedValue:
+          $ref: "#/components/schemas/DecimalAmount"
+        allocations:
+          type: array
+          items:
+            $ref: "#/components/schemas/AssetAllocation"
+    AssetAllocation:
+      type: object
+      additionalProperties: false
+      required: [type, currentOwnedValue]
+      properties:
+        type:
+          $ref: "#/components/schemas/AssetType"
+        currentOwnedValue:
+          $ref: "#/components/schemas/DecimalAmount"
+    Asset:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - name
+        - type
+        - currency
+        - ownershipShare
+        - ledgerAccountId
+        - ledgerAccountName
+        - ledgerBalance
+        - currentOwnedValue
+        - archived
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        type:
+          $ref: "#/components/schemas/AssetType"
+        currency:
+          $ref: "#/components/schemas/Currency"
+        ownershipShare:
+          $ref: "#/components/schemas/OwnershipShare"
+        country:
+          type: string
+        region:
+          type: string
+        institution:
+          type: string
+        notes:
+          type: string
+        ledgerAccountId:
+          type: string
+          format: uuid
+        ledgerAccountName:
+          type: string
+        ledgerBalance:
+          $ref: "#/components/schemas/DecimalAmount"
+        currentOwnedValue:
+          $ref: "#/components/schemas/DecimalAmount"
+        latestMarketValue:
+          $ref: "#/components/schemas/DecimalAmount"
+        latestValuationDate:
+          type: string
+          format: date
+        purchaseTransactionId:
+          type: string
+          format: uuid
+        archived:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+    CreateAssetPurchase:
+      type: object
+      additionalProperties: false
+      required: [sourceAccountId, amount, eventDate]
+      properties:
+        sourceAccountId:
+          type: string
+          format: uuid
+        amount:
+          $ref: "#/components/schemas/PositiveDecimalAmount"
+        eventDate:
+          type: string
+          format: date
+        description:
+          type: string
+          minLength: 1
+          maxLength: 500
+    CreateAssetRequest:
+      type: object
+      additionalProperties: false
+      required: [name, type, currency, ownershipShare, idempotencyKey]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        type:
+          $ref: "#/components/schemas/AssetType"
+        currency:
+          $ref: "#/components/schemas/Currency"
+        ownershipShare:
+          $ref: "#/components/schemas/OwnershipShare"
+        country:
+          type: string
+          minLength: 1
+          maxLength: 100
+        region:
+          type: string
+          minLength: 1
+          maxLength: 100
+        institution:
+          type: string
+          minLength: 1
+          maxLength: 150
+        notes:
+          type: string
+          minLength: 1
+          maxLength: 2000
+        ledgerAccountId:
+          type: string
+          format: uuid
+          description:
+            Optional existing private asset account. A dedicated account is created when omitted.
+        purchase:
+          $ref: "#/components/schemas/CreateAssetPurchase"
+        idempotencyKey:
+          type: string
+          format: uuid
+    UpdateAssetRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        country:
+          type: string
+          minLength: 1
+          maxLength: 100
+        region:
+          type: string
+          minLength: 1
+          maxLength: 100
+        institution:
+          type: string
+          minLength: 1
+          maxLength: 150
+        notes:
+          type: string
+          minLength: 1
+          maxLength: 2000
+        archived:
+          type: boolean
+    AssetValuationListResponse:
+      type: object
+      additionalProperties: false
+      required: [valuations]
+      properties:
+        valuations:
+          type: array
+          items:
+            $ref: "#/components/schemas/AssetValuation"
+    AssetValuation:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - assetId
+        - valuationDate
+        - marketValue
+        - ownedValue
+        - ledgerBalanceBefore
+        - adjustmentAmount
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        assetId:
+          type: string
+          format: uuid
+        valuationDate:
+          type: string
+          format: date
+        marketValue:
+          $ref: "#/components/schemas/DecimalAmount"
+        ownedValue:
+          $ref: "#/components/schemas/DecimalAmount"
+        ledgerBalanceBefore:
+          $ref: "#/components/schemas/DecimalAmount"
+        adjustmentAmount:
+          $ref: "#/components/schemas/DecimalAmount"
+        notes:
+          type: string
+        revaluationTransactionId:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+    CreateAssetValuationRequest:
+      type: object
+      additionalProperties: false
+      required: [valuationDate, marketValue, idempotencyKey]
+      properties:
+        valuationDate:
+          type: string
+          format: date
+        marketValue:
+          $ref: "#/components/schemas/DecimalAmount"
+        notes:
+          type: string
+          minLength: 1
+          maxLength: 1000
+        idempotencyKey:
+          type: string
+          format: uuid
+    AssetType:
+      type: string
+      enum: [REAL_ESTATE, VEHICLE, BUSINESS, SECURITIES, COLLECTIBLES, OTHER]
+    OwnershipShare:
+      type: string
+      pattern: "^(0|[1-9][0-9]?|100)(\\.[0-9]{1,2})?$"
     RecurringOperationType:
       type: string
       enum: [INCOME, EXPENSE, TRANSFER, ASSET_PURCHASE]
@@ -1802,7 +2177,17 @@ components:
       enum: [INCOME, EXPENSE]
     TransactionType:
       type: string
-      enum: [OPENING_BALANCE, INCOME, EXPENSE, TRANSFER, ASSET_PURCHASE, RECONCILIATION, REVERSAL]
+      enum:
+        [
+          OPENING_BALANCE,
+          INCOME,
+          EXPENSE,
+          TRANSFER,
+          ASSET_PURCHASE,
+          RECONCILIATION,
+          REVALUATION,
+          REVERSAL,
+        ]
     Password:
       type: string
       minLength: 12

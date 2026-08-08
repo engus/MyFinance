@@ -78,6 +78,36 @@ func (e AccountSubtype) Valid() bool {
 	}
 }
 
+// Defines values for AssetType.
+const (
+	BUSINESS     AssetType = "BUSINESS"
+	COLLECTIBLES AssetType = "COLLECTIBLES"
+	OTHER        AssetType = "OTHER"
+	REALESTATE   AssetType = "REAL_ESTATE"
+	SECURITIES   AssetType = "SECURITIES"
+	VEHICLE      AssetType = "VEHICLE"
+)
+
+// Valid indicates whether the value is a known member of the AssetType enum.
+func (e AssetType) Valid() bool {
+	switch e {
+	case BUSINESS:
+		return true
+	case COLLECTIBLES:
+		return true
+	case OTHER:
+		return true
+	case REALESTATE:
+		return true
+	case SECURITIES:
+		return true
+	case VEHICLE:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for CategoryDirection.
 const (
 	CategoryDirectionEXPENSE CategoryDirection = "EXPENSE"
@@ -475,6 +505,7 @@ const (
 	TransactionTypeINCOME         TransactionType = "INCOME"
 	TransactionTypeOPENINGBALANCE TransactionType = "OPENING_BALANCE"
 	TransactionTypeRECONCILIATION TransactionType = "RECONCILIATION"
+	TransactionTypeREVALUATION    TransactionType = "REVALUATION"
 	TransactionTypeREVERSAL       TransactionType = "REVERSAL"
 	TransactionTypeTRANSFER       TransactionType = "TRANSFER"
 )
@@ -491,6 +522,8 @@ func (e TransactionType) Valid() bool {
 	case TransactionTypeOPENINGBALANCE:
 		return true
 	case TransactionTypeRECONCILIATION:
+		return true
+	case TransactionTypeREVALUATION:
 		return true
 	case TransactionTypeREVERSAL:
 		return true
@@ -557,6 +590,63 @@ type AccountReconciliationStatusStatus string
 // AccountSubtype defines model for AccountSubtype.
 type AccountSubtype string
 
+// Asset defines model for Asset.
+type Asset struct {
+	Archived              bool                `json:"archived"`
+	Country               *string             `json:"country,omitempty"`
+	CreatedAt             time.Time           `json:"createdAt"`
+	Currency              Currency            `json:"currency"`
+	CurrentOwnedValue     DecimalAmount       `json:"currentOwnedValue"`
+	Id                    openapi_types.UUID  `json:"id"`
+	Institution           *string             `json:"institution,omitempty"`
+	LatestMarketValue     *DecimalAmount      `json:"latestMarketValue,omitempty"`
+	LatestValuationDate   *openapi_types.Date `json:"latestValuationDate,omitempty"`
+	LedgerAccountId       openapi_types.UUID  `json:"ledgerAccountId"`
+	LedgerAccountName     string              `json:"ledgerAccountName"`
+	LedgerBalance         DecimalAmount       `json:"ledgerBalance"`
+	Name                  string              `json:"name"`
+	Notes                 *string             `json:"notes,omitempty"`
+	OwnershipShare        OwnershipShare      `json:"ownershipShare"`
+	PurchaseTransactionId *openapi_types.UUID `json:"purchaseTransactionId,omitempty"`
+	Region                *string             `json:"region,omitempty"`
+	Type                  AssetType           `json:"type"`
+}
+
+// AssetAllocation defines model for AssetAllocation.
+type AssetAllocation struct {
+	CurrentOwnedValue DecimalAmount `json:"currentOwnedValue"`
+	Type              AssetType     `json:"type"`
+}
+
+// AssetListResponse defines model for AssetListResponse.
+type AssetListResponse struct {
+	Allocations            []AssetAllocation `json:"allocations"`
+	Assets                 []Asset           `json:"assets"`
+	TotalCurrentOwnedValue DecimalAmount     `json:"totalCurrentOwnedValue"`
+}
+
+// AssetType defines model for AssetType.
+type AssetType string
+
+// AssetValuation defines model for AssetValuation.
+type AssetValuation struct {
+	AdjustmentAmount         DecimalAmount       `json:"adjustmentAmount"`
+	AssetId                  openapi_types.UUID  `json:"assetId"`
+	CreatedAt                time.Time           `json:"createdAt"`
+	Id                       openapi_types.UUID  `json:"id"`
+	LedgerBalanceBefore      DecimalAmount       `json:"ledgerBalanceBefore"`
+	MarketValue              DecimalAmount       `json:"marketValue"`
+	Notes                    *string             `json:"notes,omitempty"`
+	OwnedValue               DecimalAmount       `json:"ownedValue"`
+	RevaluationTransactionId *openapi_types.UUID `json:"revaluationTransactionId,omitempty"`
+	ValuationDate            openapi_types.Date  `json:"valuationDate"`
+}
+
+// AssetValuationListResponse defines model for AssetValuationListResponse.
+type AssetValuationListResponse struct {
+	Valuations []AssetValuation `json:"valuations"`
+}
+
 // AuthResponse defines model for AuthResponse.
 type AuthResponse struct {
 	User User `json:"user"`
@@ -610,6 +700,39 @@ type CreateAccountRequest struct {
 	OpeningBalance     *DecimalAmount      `json:"openingBalance,omitempty"`
 	OpeningBalanceDate *openapi_types.Date `json:"openingBalanceDate,omitempty"`
 	Subtype            AccountSubtype      `json:"subtype"`
+}
+
+// CreateAssetPurchase defines model for CreateAssetPurchase.
+type CreateAssetPurchase struct {
+	Amount          PositiveDecimalAmount `json:"amount"`
+	Description     *string               `json:"description,omitempty"`
+	EventDate       openapi_types.Date    `json:"eventDate"`
+	SourceAccountId openapi_types.UUID    `json:"sourceAccountId"`
+}
+
+// CreateAssetRequest defines model for CreateAssetRequest.
+type CreateAssetRequest struct {
+	Country        *string            `json:"country,omitempty"`
+	Currency       Currency           `json:"currency"`
+	IdempotencyKey openapi_types.UUID `json:"idempotencyKey"`
+	Institution    *string            `json:"institution,omitempty"`
+
+	// LedgerAccountId Optional existing private asset account. A dedicated account is created when omitted.
+	LedgerAccountId *openapi_types.UUID  `json:"ledgerAccountId,omitempty"`
+	Name            string               `json:"name"`
+	Notes           *string              `json:"notes,omitempty"`
+	OwnershipShare  OwnershipShare       `json:"ownershipShare"`
+	Purchase        *CreateAssetPurchase `json:"purchase,omitempty"`
+	Region          *string              `json:"region,omitempty"`
+	Type            AssetType            `json:"type"`
+}
+
+// CreateAssetValuationRequest defines model for CreateAssetValuationRequest.
+type CreateAssetValuationRequest struct {
+	IdempotencyKey openapi_types.UUID `json:"idempotencyKey"`
+	MarketValue    DecimalAmount      `json:"marketValue"`
+	Notes          *string            `json:"notes,omitempty"`
+	ValuationDate  openapi_types.Date `json:"valuationDate"`
 }
 
 // CreateCategoryRequest defines model for CreateCategoryRequest.
@@ -727,6 +850,9 @@ type OnboardingRecurringIncome struct {
 	DayOfMonth int                   `json:"dayOfMonth"`
 	Name       string                `json:"name"`
 }
+
+// OwnershipShare defines model for OwnershipShare.
+type OwnershipShare = string
 
 // Password defines model for Password.
 type Password = string
@@ -965,6 +1091,16 @@ type UpdateAccountRequest struct {
 	Name     *string   `json:"name,omitempty"`
 }
 
+// UpdateAssetRequest defines model for UpdateAssetRequest.
+type UpdateAssetRequest struct {
+	Archived    *bool   `json:"archived,omitempty"`
+	Country     *string `json:"country,omitempty"`
+	Institution *string `json:"institution,omitempty"`
+	Name        *string `json:"name,omitempty"`
+	Notes       *string `json:"notes,omitempty"`
+	Region      *string `json:"region,omitempty"`
+}
+
 // UpdateCategoryRequest defines model for UpdateCategoryRequest.
 type UpdateCategoryRequest struct {
 	Archived *bool   `json:"archived,omitempty"`
@@ -1015,6 +1151,9 @@ type UserAccountClass string
 // AccountId defines model for AccountId.
 type AccountId = openapi_types.UUID
 
+// AssetId defines model for AssetId.
+type AssetId = openapi_types.UUID
+
 // CategoryId defines model for CategoryId.
 type CategoryId = openapi_types.UUID
 
@@ -1053,6 +1192,11 @@ type ListAccountsParams struct {
 	IncludeArchived *bool `form:"includeArchived,omitempty" json:"includeArchived,omitempty"`
 }
 
+// ListAssetsParams defines parameters for ListAssets.
+type ListAssetsParams struct {
+	IncludeArchived *bool `form:"includeArchived,omitempty" json:"includeArchived,omitempty"`
+}
+
 // ListCategoriesParams defines parameters for ListCategories.
 type ListCategoriesParams struct {
 	IncludeArchived *bool `form:"includeArchived,omitempty" json:"includeArchived,omitempty"`
@@ -1084,6 +1228,15 @@ type CreateAccountJSONRequestBody = CreateAccountRequest
 
 // UpdateAccountJSONRequestBody defines body for UpdateAccount for application/json ContentType.
 type UpdateAccountJSONRequestBody = UpdateAccountRequest
+
+// CreateAssetJSONRequestBody defines body for CreateAsset for application/json ContentType.
+type CreateAssetJSONRequestBody = CreateAssetRequest
+
+// UpdateAssetJSONRequestBody defines body for UpdateAsset for application/json ContentType.
+type UpdateAssetJSONRequestBody = UpdateAssetRequest
+
+// CreateAssetValuationJSONRequestBody defines body for CreateAssetValuation for application/json ContentType.
+type CreateAssetValuationJSONRequestBody = CreateAssetValuationRequest
 
 // LoginJSONRequestBody defines body for Login for application/json ContentType.
 type LoginJSONRequestBody = LoginRequest
@@ -1153,6 +1306,24 @@ type ServerInterface interface {
 	// UpdateAccount Rename, archive, restore, or change an unused account currency
 	// (PATCH /api/v1/accounts/{accountId})
 	UpdateAccount(w http.ResponseWriter, r *http.Request, accountId AccountId)
+	// ListAssets List manual asset profiles and their current owned values
+	// (GET /api/v1/assets)
+	ListAssets(w http.ResponseWriter, r *http.Request, params ListAssetsParams)
+	// CreateAsset Create a manual asset profile and optionally post its purchase atomically
+	// (POST /api/v1/assets)
+	CreateAsset(w http.ResponseWriter, r *http.Request)
+	// GetAsset Return one owned manual asset profile
+	// (GET /api/v1/assets/{assetId})
+	GetAsset(w http.ResponseWriter, r *http.Request, assetId AssetId)
+	// UpdateAsset Update, archive, or restore a manual asset profile
+	// (PATCH /api/v1/assets/{assetId})
+	UpdateAsset(w http.ResponseWriter, r *http.Request, assetId AssetId)
+	// ListAssetValuations List immutable manual valuation snapshots for one asset
+	// (GET /api/v1/assets/{assetId}/valuations)
+	ListAssetValuations(w http.ResponseWriter, r *http.Request, assetId AssetId)
+	// CreateAssetValuation Record a manual valuation and post its idempotent revaluation delta
+	// (POST /api/v1/assets/{assetId}/valuations)
+	CreateAssetValuation(w http.ResponseWriter, r *http.Request, assetId AssetId)
 	// Login Authenticate with email and password
 	// (POST /api/v1/auth/login)
 	Login(w http.ResponseWriter, r *http.Request)
@@ -1267,6 +1438,42 @@ func (_ Unimplemented) CreateAccount(w http.ResponseWriter, r *http.Request) {
 // UpdateAccount Rename, archive, restore, or change an unused account currency
 // (PATCH /api/v1/accounts/{accountId})
 func (_ Unimplemented) UpdateAccount(w http.ResponseWriter, r *http.Request, accountId AccountId) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ListAssets List manual asset profiles and their current owned values
+// (GET /api/v1/assets)
+func (_ Unimplemented) ListAssets(w http.ResponseWriter, r *http.Request, params ListAssetsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// CreateAsset Create a manual asset profile and optionally post its purchase atomically
+// (POST /api/v1/assets)
+func (_ Unimplemented) CreateAsset(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GetAsset Return one owned manual asset profile
+// (GET /api/v1/assets/{assetId})
+func (_ Unimplemented) GetAsset(w http.ResponseWriter, r *http.Request, assetId AssetId) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// UpdateAsset Update, archive, or restore a manual asset profile
+// (PATCH /api/v1/assets/{assetId})
+func (_ Unimplemented) UpdateAsset(w http.ResponseWriter, r *http.Request, assetId AssetId) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ListAssetValuations List immutable manual valuation snapshots for one asset
+// (GET /api/v1/assets/{assetId}/valuations)
+func (_ Unimplemented) ListAssetValuations(w http.ResponseWriter, r *http.Request, assetId AssetId) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// CreateAssetValuation Record a manual valuation and post its idempotent revaluation delta
+// (POST /api/v1/assets/{assetId}/valuations)
+func (_ Unimplemented) CreateAssetValuation(w http.ResponseWriter, r *http.Request, assetId AssetId) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -1529,6 +1736,157 @@ func (siw *ServerInterfaceWrapper) UpdateAccount(w http.ResponseWriter, r *http.
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.UpdateAccount(w, r, accountId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListAssets operation middleware
+func (siw *ServerInterfaceWrapper) ListAssets(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListAssetsParams
+
+	// ------------- Optional query parameter "includeArchived" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "includeArchived", r.URL.Query(), &params.IncludeArchived, runtime.BindQueryParameterOptions{Type: "boolean", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "includeArchived"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "includeArchived", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListAssets(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateAsset operation middleware
+func (siw *ServerInterfaceWrapper) CreateAsset(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateAsset(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetAsset operation middleware
+func (siw *ServerInterfaceWrapper) GetAsset(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "assetId" -------------
+	var assetId AssetId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "assetId", chi.URLParam(r, "assetId"), &assetId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "assetId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetAsset(w, r, assetId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateAsset operation middleware
+func (siw *ServerInterfaceWrapper) UpdateAsset(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "assetId" -------------
+	var assetId AssetId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "assetId", chi.URLParam(r, "assetId"), &assetId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "assetId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateAsset(w, r, assetId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListAssetValuations operation middleware
+func (siw *ServerInterfaceWrapper) ListAssetValuations(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "assetId" -------------
+	var assetId AssetId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "assetId", chi.URLParam(r, "assetId"), &assetId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "assetId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListAssetValuations(w, r, assetId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateAssetValuation operation middleware
+func (siw *ServerInterfaceWrapper) CreateAssetValuation(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "assetId" -------------
+	var assetId AssetId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "assetId", chi.URLParam(r, "assetId"), &assetId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "assetId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateAssetValuation(w, r, assetId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -2413,6 +2771,24 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/api/v1/reconciliation/previews/{previewId}/confirm", wrapper.ConfirmReconciliation)
 	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/assets", wrapper.ListAssets)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/assets", wrapper.CreateAsset)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/assets/{assetId}", wrapper.GetAsset)
+	})
+	r.Group(func(r chi.Router) {
+		r.Patch(options.BaseURL+"/api/v1/assets/{assetId}", wrapper.UpdateAsset)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/assets/{assetId}/valuations", wrapper.ListAssetValuations)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/assets/{assetId}/valuations", wrapper.CreateAssetValuation)
+	})
 
 	return r
 }
@@ -2422,97 +2798,111 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 // const string: with thousands of chunks the chained `+` fold is several
 // times slower for the Go compiler than parsing a slice literal.
 var swaggerSpec = []string{
-	"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",
+	"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",
 }
 
 // decodeSpec returns the embedded OpenAPI spec as raw JSON bytes,

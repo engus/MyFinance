@@ -98,12 +98,10 @@ pages_preview/     Approved and historical visual references
 
 ## Current milestone boundary
 
-Milestone 4 implements recurring templates and a lock-safe worker, partial account reconciliation,
-the soft month-end reminder window, multi-month gap disclosure, confirmation previews, atomic AUTO
-mode, and reversal-based corrections. Reconciliation derives only aggregate Other Income or Other
-Expense and never invents detailed categories.
+Milestone 5 adds asset profiles, optional asset-purchase postings, manual dated valuation snapshots,
+and an auditable revaluation entry for every change in value. Asset values are entered by the user;
+the product intentionally does not fetch ticker prices or model tax lots.
 
 Different-currency transactions remain explicit `fx_rate_unavailable` conflicts until the dated FX
-cache is connected; no rate is guessed. Manual asset valuation snapshots arrive in Milestone 5,
-including user-entered monthly securities-portfolio values. Automatic security quotes and
-liabilities remain out of v1.
+cache is connected; no rate is guessed. Manual asset valuation supports a user-entered monthly
+portfolio value, while automatic security quotes and liabilities remain out of v1.

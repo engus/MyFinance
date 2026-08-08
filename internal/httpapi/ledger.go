@@ -608,6 +608,7 @@ func ensureLedgerInfrastructure(ctx context.Context, tx pgx.Tx, userID pgtype.UU
 	}
 	systems := []struct{ code, name, class string }{
 		{"OPENING_EQUITY", "Opening balance equity", "EQUITY"},
+		{"UNREALIZED_GAIN_LOSS", "Unrealized gain / loss", "EQUITY"},
 		{"OTHER_INCOME", "Other income", "INCOME"},
 		{"OTHER_EXPENSE", "Other expense", "EXPENSE"},
 	}

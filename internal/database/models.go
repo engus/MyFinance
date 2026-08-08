@@ -15,6 +15,42 @@ type AppMetadatum struct {
 	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
 }
 
+// Manual asset profiles linked one-to-one with private asset ledger accounts.
+type Asset struct {
+	ID                     pgtype.UUID        `json:"id"`
+	UserID                 pgtype.UUID        `json:"user_id"`
+	LedgerAccountID        pgtype.UUID        `json:"ledger_account_id"`
+	Name                   string             `json:"name"`
+	AssetType              string             `json:"asset_type"`
+	Currency               string             `json:"currency"`
+	OwnershipShare         pgtype.Numeric     `json:"ownership_share"`
+	Country                pgtype.Text        `json:"country"`
+	Region                 pgtype.Text        `json:"region"`
+	Institution            pgtype.Text        `json:"institution"`
+	Notes                  pgtype.Text        `json:"notes"`
+	CreationIdempotencyKey pgtype.UUID        `json:"creation_idempotency_key"`
+	PurchaseTransactionID  pgtype.UUID        `json:"purchase_transaction_id"`
+	ArchivedAt             pgtype.Timestamptz `json:"archived_at"`
+	CreatedAt              pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt              pgtype.Timestamptz `json:"updated_at"`
+}
+
+// Immutable manual market-value snapshots; each value posts only its delta through REVALUATION.
+type AssetValuation struct {
+	ID                       pgtype.UUID        `json:"id"`
+	UserID                   pgtype.UUID        `json:"user_id"`
+	AssetID                  pgtype.UUID        `json:"asset_id"`
+	ValuationDate            pgtype.Date        `json:"valuation_date"`
+	MarketValue              pgtype.Numeric     `json:"market_value"`
+	OwnedValue               pgtype.Numeric     `json:"owned_value"`
+	LedgerBalanceBefore      pgtype.Numeric     `json:"ledger_balance_before"`
+	AdjustmentAmount         pgtype.Numeric     `json:"adjustment_amount"`
+	Notes                    pgtype.Text        `json:"notes"`
+	IdempotencyKey           pgtype.UUID        `json:"idempotency_key"`
+	RevaluationTransactionID pgtype.UUID        `json:"revaluation_transaction_id"`
+	CreatedAt                pgtype.Timestamptz `json:"created_at"`
+}
+
 type AuthAuditEvent struct {
 	ID        int64              `json:"id"`
 	UserID    pgtype.UUID        `json:"user_id"`

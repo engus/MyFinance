@@ -502,6 +502,60 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/assets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List manual asset profiles and their current owned values */
+        get: operations["listAssets"];
+        put?: never;
+        /** Create a manual asset profile and optionally post its purchase atomically */
+        post: operations["createAsset"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/assets/{assetId}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Return one owned manual asset profile */
+        get: operations["getAsset"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update, archive, or restore a manual asset profile */
+        patch: operations["updateAsset"];
+        trace?: never;
+    };
+    "/api/v1/assets/{assetId}/valuations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List immutable manual valuation snapshots for one asset */
+        get: operations["listAssetValuations"];
+        put?: never;
+        /** Record a manual valuation and post its idempotent revaluation delta */
+        post: operations["createAssetValuation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -927,6 +981,105 @@ export interface components {
             /** Format: date-time */
             createdAt: string;
         };
+        AssetListResponse: {
+            assets: components["schemas"]["Asset"][];
+            totalCurrentOwnedValue: components["schemas"]["DecimalAmount"];
+            allocations: components["schemas"]["AssetAllocation"][];
+        };
+        AssetAllocation: {
+            type: components["schemas"]["AssetType"];
+            currentOwnedValue: components["schemas"]["DecimalAmount"];
+        };
+        Asset: {
+            /** Format: uuid */
+            id: string;
+            name: string;
+            type: components["schemas"]["AssetType"];
+            currency: components["schemas"]["Currency"];
+            ownershipShare: components["schemas"]["OwnershipShare"];
+            country?: string;
+            region?: string;
+            institution?: string;
+            notes?: string;
+            /** Format: uuid */
+            ledgerAccountId: string;
+            ledgerAccountName: string;
+            ledgerBalance: components["schemas"]["DecimalAmount"];
+            currentOwnedValue: components["schemas"]["DecimalAmount"];
+            latestMarketValue?: components["schemas"]["DecimalAmount"];
+            /** Format: date */
+            latestValuationDate?: string;
+            /** Format: uuid */
+            purchaseTransactionId?: string;
+            archived: boolean;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        CreateAssetPurchase: {
+            /** Format: uuid */
+            sourceAccountId: string;
+            amount: components["schemas"]["PositiveDecimalAmount"];
+            /** Format: date */
+            eventDate: string;
+            description?: string;
+        };
+        CreateAssetRequest: {
+            name: string;
+            type: components["schemas"]["AssetType"];
+            currency: components["schemas"]["Currency"];
+            ownershipShare: components["schemas"]["OwnershipShare"];
+            country?: string;
+            region?: string;
+            institution?: string;
+            notes?: string;
+            /**
+             * Format: uuid
+             * @description Optional existing private asset account. A dedicated account is created when omitted.
+             */
+            ledgerAccountId?: string;
+            purchase?: components["schemas"]["CreateAssetPurchase"];
+            /** Format: uuid */
+            idempotencyKey: string;
+        };
+        UpdateAssetRequest: {
+            name?: string;
+            country?: string;
+            region?: string;
+            institution?: string;
+            notes?: string;
+            archived?: boolean;
+        };
+        AssetValuationListResponse: {
+            valuations: components["schemas"]["AssetValuation"][];
+        };
+        AssetValuation: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            assetId: string;
+            /** Format: date */
+            valuationDate: string;
+            marketValue: components["schemas"]["DecimalAmount"];
+            ownedValue: components["schemas"]["DecimalAmount"];
+            ledgerBalanceBefore: components["schemas"]["DecimalAmount"];
+            adjustmentAmount: components["schemas"]["DecimalAmount"];
+            notes?: string;
+            /** Format: uuid */
+            revaluationTransactionId?: string;
+            /** Format: date-time */
+            createdAt: string;
+        };
+        CreateAssetValuationRequest: {
+            /** Format: date */
+            valuationDate: string;
+            marketValue: components["schemas"]["DecimalAmount"];
+            notes?: string;
+            /** Format: uuid */
+            idempotencyKey: string;
+        };
+        /** @enum {string} */
+        AssetType: "REAL_ESTATE" | "VEHICLE" | "BUSINESS" | "SECURITIES" | "COLLECTIBLES" | "OTHER";
+        OwnershipShare: string;
         /** @enum {string} */
         RecurringOperationType: "INCOME" | "EXPENSE" | "TRANSFER" | "ASSET_PURCHASE";
         /** @enum {string} */
@@ -942,7 +1095,7 @@ export interface components {
         /** @enum {string} */
         CategoryDirection: "INCOME" | "EXPENSE";
         /** @enum {string} */
-        TransactionType: "OPENING_BALANCE" | "INCOME" | "EXPENSE" | "TRANSFER" | "ASSET_PURCHASE" | "RECONCILIATION" | "REVERSAL";
+        TransactionType: "OPENING_BALANCE" | "INCOME" | "EXPENSE" | "TRANSFER" | "ASSET_PURCHASE" | "RECONCILIATION" | "REVALUATION" | "REVERSAL";
         Password: string;
         DecimalAmount: string;
         PositiveDecimalAmount: string;
@@ -1023,6 +1176,7 @@ export interface components {
         TransactionId: string;
         TemplateId: string;
         PreviewId: string;
+        AssetId: string;
     };
     requestBodies: never;
     headers: never;
@@ -1905,6 +2059,164 @@ export interface operations {
                     "application/json": components["schemas"]["Reconciliation"];
                 };
             };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    listAssets: {
+        parameters: {
+            query?: {
+                includeArchived?: boolean;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Asset profiles and allocation inputs */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssetListResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+        };
+    };
+    createAsset: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateAssetRequest"];
+            };
+        };
+        responses: {
+            /** @description Asset profile created */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Asset"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    getAsset: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                assetId: components["parameters"]["AssetId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Asset profile */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Asset"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    updateAsset: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                assetId: components["parameters"]["AssetId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateAssetRequest"];
+            };
+        };
+        responses: {
+            /** @description Asset profile updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Asset"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
+    listAssetValuations: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                assetId: components["parameters"]["AssetId"];
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Asset valuation history */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssetValuationListResponse"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            404: components["responses"]["NotFound"];
+        };
+    };
+    createAssetValuation: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                assetId: components["parameters"]["AssetId"];
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateAssetValuationRequest"];
+            };
+        };
+        responses: {
+            /** @description Valuation snapshot recorded */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssetValuation"];
+                };
+            };
+            400: components["responses"]["BadRequest"];
             401: components["responses"]["Unauthorized"];
             404: components["responses"]["NotFound"];
             409: components["responses"]["Conflict"];
