@@ -98,10 +98,9 @@ pages_preview/     Approved and historical visual references
 
 ## Current milestone boundary
 
-Milestone 5 adds asset profiles, optional asset-purchase postings, manual dated valuation snapshots,
-and an auditable revaluation entry for every change in value. Asset values are entered by the user;
-the product intentionally does not fetch ticker prices or model tax lots.
+Milestone 6 adds a cached Yahoo FX worker and a data-backed Dashboard. It presents converted current
+wealth, monthly savings, history, manual-asset allocation, and currency exposure while visibly
+excluding missing-rate values instead of guessing a conversion.
 
-Different-currency transactions remain explicit `fx_rate_unavailable` conflicts until the dated FX
-cache is connected; no rate is guessed. Manual asset valuation supports a user-entered monthly
-portfolio value, while automatic security quotes and liabilities remain out of v1.
+Manual asset valuation supports a user-entered monthly portfolio value. Automatic security quotes,
+ticker positions, tax lots, and liabilities remain out of v1.
