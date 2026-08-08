@@ -45,6 +45,30 @@ describe("App", () => {
             ),
           );
         }
+        if (url.includes("/api/v1/dashboard")) {
+          return Promise.resolve(
+            new Response(
+              JSON.stringify({
+                currency: "USD",
+                month: "2026-08",
+                fxStatus: { state: "COMPLETE", missingCurrencies: [], staleCurrencies: [] },
+                netWorth: "0",
+                assets: "0",
+                liabilities: "0",
+                cash: "0",
+                monthlyIncome: "0",
+                monthlyExpenses: "0",
+                netSavings: "0",
+                savingsRate: "",
+                netWorthHistory: [],
+                cashflowHistory: [],
+                assetAllocation: [],
+                currencyExposure: [],
+              }),
+              { status: 200, headers: { "Content-Type": "application/json" } },
+            ),
+          );
+        }
         if (url.includes("/api/v1/accounts")) {
           return Promise.resolve(
             new Response(JSON.stringify({ accounts: [] }), {
@@ -90,7 +114,7 @@ describe("App", () => {
       await screen.findByRole("navigation", { name: "Primary navigation" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("heading", { name: "Your financial ledger is ready" }),
+      await screen.findByRole("heading", { name: "Your money, in one clear view." }),
     ).toBeInTheDocument();
     expect(screen.queryByText("API readiness")).not.toBeInTheDocument();
     expect(screen.queryByText("vtest")).not.toBeInTheDocument();

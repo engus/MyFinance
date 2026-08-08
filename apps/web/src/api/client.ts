@@ -40,6 +40,7 @@ export type AssetListResponse = components["schemas"]["AssetListResponse"];
 export type CreateAssetRequest = components["schemas"]["CreateAssetRequest"];
 export type CreateAssetValuationRequest = components["schemas"]["CreateAssetValuationRequest"];
 export type UpdateAssetRequest = components["schemas"]["UpdateAssetRequest"];
+export type DashboardResponse = components["schemas"]["DashboardResponse"];
 
 export class ApiError extends Error {
   readonly code: string;
@@ -343,6 +344,11 @@ export async function createAssetValuation(
     "POST",
     payload,
   )) as AssetValuation;
+}
+
+export async function getDashboard(month?: string): Promise<DashboardResponse> {
+  const suffix = month ? `?month=${encodeURIComponent(month)}` : "";
+  return (await jsonRequest(`/api/v1/dashboard${suffix}`, "GET")) as DashboardResponse;
 }
 
 async function authMutation(path: string, method: string, body: unknown): Promise<User> {

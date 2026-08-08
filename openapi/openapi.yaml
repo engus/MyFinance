@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: MyFinance API
-  version: 0.4.0
+  version: 0.5.0
   description: REST contract for the MyFinance personal-finance web application.
 servers:
   - url: /api/v1
@@ -32,6 +32,27 @@ paths:
                 $ref: "#/components/schemas/HealthResponse"
         "503":
           $ref: "#/components/responses/ServiceUnavailable"
+  /api/v1/dashboard:
+    get:
+      operationId: getDashboard
+      summary: Return converted wealth and cashflow dashboard data
+      tags: [Dashboard]
+      parameters:
+        - name: month
+          in: query
+          description: Calendar month used for income, expenses, and savings, formatted YYYY-MM.
+          schema:
+            type: string
+            pattern: '^\\d{4}-\\d{2}$'
+      responses:
+        "200":
+          description: Dashboard metrics, chart series, and FX freshness state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
   /api/v1/auth/register:
     post:
       operationId: register
@@ -1001,6 +1022,118 @@ components:
           schema:
             $ref: "#/components/schemas/ErrorEnvelope"
   schemas:
+    DashboardResponse:
+      type: object
+      additionalProperties: false
+      required:
+        [
+          currency,
+          month,
+          fxStatus,
+          netWorth,
+          assets,
+          liabilities,
+          cash,
+          monthlyIncome,
+          monthlyExpenses,
+          netSavings,
+          savingsRate,
+          netWorthHistory,
+          cashflowHistory,
+          assetAllocation,
+          currencyExposure,
+        ]
+      properties:
+        currency:
+          $ref: "#/components/schemas/Currency"
+        month:
+          type: string
+          pattern: '^\\d{4}-\\d{2}$'
+        fxStatus:
+          $ref: "#/components/schemas/DashboardFXStatus"
+        netWorth:
+          $ref: "#/components/schemas/DecimalAmount"
+        assets:
+          $ref: "#/components/schemas/DecimalAmount"
+        liabilities:
+          $ref: "#/components/schemas/DecimalAmount"
+        cash:
+          $ref: "#/components/schemas/DecimalAmount"
+        monthlyIncome:
+          $ref: "#/components/schemas/DecimalAmount"
+        monthlyExpenses:
+          $ref: "#/components/schemas/DecimalAmount"
+        netSavings:
+          $ref: "#/components/schemas/DecimalAmount"
+        savingsRate:
+          type: string
+          nullable: true
+          description: Exact percent decimal, null when monthly income is zero.
+        netWorthHistory:
+          type: array
+          items:
+            $ref: "#/components/schemas/DashboardNetWorthPoint"
+        cashflowHistory:
+          type: array
+          items:
+            $ref: "#/components/schemas/DashboardCashflowPoint"
+        assetAllocation:
+          type: array
+          items:
+            $ref: "#/components/schemas/DashboardBreakdown"
+        currencyExposure:
+          type: array
+          items:
+            $ref: "#/components/schemas/DashboardBreakdown"
+    DashboardFXStatus:
+      type: object
+      additionalProperties: false
+      required: [state, missingCurrencies, staleCurrencies]
+      properties:
+        state:
+          type: string
+          enum: [COMPLETE, STALE, INCOMPLETE]
+        missingCurrencies:
+          type: array
+          items:
+            $ref: "#/components/schemas/Currency"
+        staleCurrencies:
+          type: array
+          items:
+            $ref: "#/components/schemas/Currency"
+    DashboardNetWorthPoint:
+      type: object
+      additionalProperties: false
+      required: [month, netWorth]
+      properties:
+        month:
+          type: string
+          pattern: '^\\d{4}-\\d{2}$'
+        netWorth:
+          $ref: "#/components/schemas/DecimalAmount"
+    DashboardCashflowPoint:
+      type: object
+      additionalProperties: false
+      required: [month, income, expenses, savings]
+      properties:
+        month:
+          type: string
+          pattern: '^\\d{4}-\\d{2}$'
+        income:
+          $ref: "#/components/schemas/DecimalAmount"
+        expenses:
+          $ref: "#/components/schemas/DecimalAmount"
+        savings:
+          $ref: "#/components/schemas/DecimalAmount"
+    DashboardBreakdown:
+      type: object
+      additionalProperties: false
+      required: [label, value]
+      properties:
+        label:
+          type: string
+        value:
+          $ref: "#/components/schemas/DecimalAmount"
     HealthResponse:
       type: object
       additionalProperties: false

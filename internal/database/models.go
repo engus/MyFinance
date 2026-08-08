@@ -84,6 +84,18 @@ type Category struct {
 	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
 }
 
+// Dated, provider-sourced FX snapshots. A non-null stale_at retains the last usable rate while surfacing freshness to clients.
+type FxRate struct {
+	ID            pgtype.UUID        `json:"id"`
+	Provider      string             `json:"provider"`
+	BaseCurrency  string             `json:"base_currency"`
+	QuoteCurrency string             `json:"quote_currency"`
+	Rate          pgtype.Numeric     `json:"rate"`
+	RateDate      pgtype.Date        `json:"rate_date"`
+	FetchedAt     pgtype.Timestamptz `json:"fetched_at"`
+	StaleAt       pgtype.Timestamptz `json:"stale_at"`
+}
+
 type LedgerAccount struct {
 	ID           pgtype.UUID        `json:"id"`
 	UserID       pgtype.UUID        `json:"user_id"`
