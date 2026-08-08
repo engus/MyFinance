@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { getReadiness } from "../api/client";
 import { ErrorState, LoadingState } from "../components/AsyncState";
 import { Card } from "../components/Card";
+import { useAuth } from "../auth/useAuth";
 import { en } from "../i18n/en";
 
 const metrics = [
@@ -13,6 +14,7 @@ const metrics = [
 ] as const;
 
 export function DashboardPage() {
+  const { user } = useAuth();
   const readiness = useQuery({
     queryKey: ["health", "ready"],
     queryFn: ({ signal }) => getReadiness(signal),
@@ -42,7 +44,7 @@ export function DashboardPage() {
         </div>
       </section>
 
-      <section className="metric-grid" aria-label="Financial overview placeholders">
+      <section className="metric-grid" aria-label={en.dashboard.financialOverview}>
         {metrics.map((metric) => (
           <Card key={metric.label} className="metric-card">
             <span className="eyebrow">{metric.label}</span>
@@ -53,17 +55,20 @@ export function DashboardPage() {
       </section>
 
       <section className="dashboard-grid">
-        <Card title="Net worth history" subtitle="Cash and manually valued assets · USD">
-          <div className="chart-placeholder" aria-label="Empty net worth chart">
+        <Card
+          title={en.dashboard.netWorthHistory}
+          subtitle={en.dashboard.netWorthSubtitle(user?.displayCurrency ?? "USD")}
+        >
+          <div className="chart-placeholder" aria-label={en.dashboard.emptyNetWorthChart}>
             <span>{en.dashboard.pending}</span>
           </div>
         </Card>
-        <Card title="Accounts" subtitle="No active accounts">
+        <Card title={en.dashboard.accounts} subtitle={en.dashboard.stagedAccounts}>
           <div className="account-placeholder">
             <span className="account-placeholder-icon" aria-hidden="true">
               ＋
             </span>
-            <p>Onboarding will create the first account and opening balance.</p>
+            <p>{en.dashboard.stagedAccountDescription}</p>
           </div>
         </Card>
       </section>

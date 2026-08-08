@@ -20,6 +20,10 @@ func main() {
 	settings := config.Load()
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: settings.LogLevel}))
 	slog.SetDefault(logger)
+	if err := settings.ValidateAPI(); err != nil {
+		logger.Error("api_configuration_invalid", "error", err)
+		os.Exit(1)
+	}
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
@@ -32,8 +36,16 @@ func main() {
 	defer pool.Close()
 
 	server := &http.Server{
-		Addr:              fmt.Sprintf(":%d", settings.APIPort),
-		Handler:           httpapi.NewHandler(httpapi.NewServer(pool, settings.Version), logger),
+		Addr: fmt.Sprintf(":%d", settings.APIPort),
+		Handler: httpapi.NewHandler(
+			httpapi.NewServer(
+				pool,
+				settings.Version,
+				httpapi.WithSessionConfig(settings.SessionTTL, settings.SessionCookieSecure),
+				httpapi.WithTOTPEncryptionKey(settings.TOTPEncryptionKey),
+			),
+			logger,
+		),
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       15 * time.Second,
 		WriteTimeout:      15 * time.Second,

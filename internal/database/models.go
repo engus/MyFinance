@@ -14,3 +14,96 @@ type AppMetadatum struct {
 	Value     []byte             `json:"value"`
 	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
 }
+
+type AuthAuditEvent struct {
+	ID        int64              `json:"id"`
+	UserID    pgtype.UUID        `json:"user_id"`
+	EventType string             `json:"event_type"`
+	Success   bool               `json:"success"`
+	RequestID pgtype.Text        `json:"request_id"`
+	Metadata  []byte             `json:"metadata"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+}
+
+type LoginChallenge struct {
+	ID         pgtype.UUID        `json:"id"`
+	UserID     pgtype.UUID        `json:"user_id"`
+	TokenHash  []byte             `json:"token_hash"`
+	ExpiresAt  pgtype.Timestamptz `json:"expires_at"`
+	Attempts   int16              `json:"attempts"`
+	ConsumedAt pgtype.Timestamptz `json:"consumed_at"`
+	CreatedAt  pgtype.Timestamptz `json:"created_at"`
+}
+
+// First-account setup awaiting immutable opening-balance posting in Milestone 3.
+type OnboardingAccountSetup struct {
+	ID                 pgtype.UUID        `json:"id"`
+	UserID             pgtype.UUID        `json:"user_id"`
+	Name               string             `json:"name"`
+	AccountClass       string             `json:"account_class"`
+	Subtype            string             `json:"subtype"`
+	Currency           string             `json:"currency"`
+	OpeningBalance     pgtype.Numeric     `json:"opening_balance"`
+	OpeningBalanceDate pgtype.Date        `json:"opening_balance_date"`
+	LedgerPostedAt     pgtype.Timestamptz `json:"ledger_posted_at"`
+	CreatedAt          pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt          pgtype.Timestamptz `json:"updated_at"`
+}
+
+// Optional monthly income setup awaiting recurring-template materialization in Milestone 3.
+type OnboardingRecurringIncomeSetup struct {
+	ID             pgtype.UUID        `json:"id"`
+	UserID         pgtype.UUID        `json:"user_id"`
+	Name           string             `json:"name"`
+	Amount         pgtype.Numeric     `json:"amount"`
+	Currency       string             `json:"currency"`
+	DayOfMonth     int16              `json:"day_of_month"`
+	MaterializedAt pgtype.Timestamptz `json:"materialized_at"`
+	CreatedAt      pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt      pgtype.Timestamptz `json:"updated_at"`
+}
+
+type RecoveryCode struct {
+	ID        pgtype.UUID        `json:"id"`
+	UserID    pgtype.UUID        `json:"user_id"`
+	CodeHash  []byte             `json:"code_hash"`
+	UsedAt    pgtype.Timestamptz `json:"used_at"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+}
+
+// Database-backed sessions; only a SHA-256 digest of the browser token is stored.
+type Session struct {
+	ID         pgtype.UUID        `json:"id"`
+	UserID     pgtype.UUID        `json:"user_id"`
+	TokenHash  []byte             `json:"token_hash"`
+	ExpiresAt  pgtype.Timestamptz `json:"expires_at"`
+	LastSeenAt pgtype.Timestamptz `json:"last_seen_at"`
+	UserAgent  pgtype.Text        `json:"user_agent"`
+	CreatedAt  pgtype.Timestamptz `json:"created_at"`
+	RevokedAt  pgtype.Timestamptz `json:"revoked_at"`
+}
+
+type TotpCredential struct {
+	UserID           pgtype.UUID        `json:"user_id"`
+	SecretCiphertext []byte             `json:"secret_ciphertext"`
+	EnabledAt        pgtype.Timestamptz `json:"enabled_at"`
+	LastUsedStep     int64              `json:"last_used_step"`
+	CreatedAt        pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt        pgtype.Timestamptz `json:"updated_at"`
+}
+
+// Application identities with normalized email addresses and Argon2id password hashes.
+type User struct {
+	ID                  pgtype.UUID        `json:"id"`
+	Email               string             `json:"email"`
+	DisplayName         string             `json:"display_name"`
+	PasswordHash        string             `json:"password_hash"`
+	Timezone            string             `json:"timezone"`
+	FunctionalCurrency  string             `json:"functional_currency"`
+	DisplayCurrency     string             `json:"display_currency"`
+	OnboardingCompleted bool               `json:"onboarding_completed"`
+	CreatedAt           pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt           pgtype.Timestamptz `json:"updated_at"`
+	ReconciliationMode  string             `json:"reconciliation_mode"`
+	PasswordChangedAt   pgtype.Timestamptz `json:"password_changed_at"`
+}

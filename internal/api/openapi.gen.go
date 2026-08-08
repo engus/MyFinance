@@ -12,10 +12,97 @@ import (
 	"net/url"
 	"path"
 	"strings"
+	"time"
 
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/go-chi/chi/v5"
+	"github.com/oapi-codegen/runtime"
+	openapi_types "github.com/oapi-codegen/runtime/types"
 )
+
+// Defines values for Currency.
+const (
+	AED Currency = "AED"
+	AUD Currency = "AUD"
+	BRL Currency = "BRL"
+	CAD Currency = "CAD"
+	CHF Currency = "CHF"
+	CNY Currency = "CNY"
+	DKK Currency = "DKK"
+	EUR Currency = "EUR"
+	GBP Currency = "GBP"
+	HKD Currency = "HKD"
+	INR Currency = "INR"
+	JPY Currency = "JPY"
+	KRW Currency = "KRW"
+	KZT Currency = "KZT"
+	MXN Currency = "MXN"
+	NOK Currency = "NOK"
+	NZD Currency = "NZD"
+	RUB Currency = "RUB"
+	SEK Currency = "SEK"
+	SGD Currency = "SGD"
+	TWD Currency = "TWD"
+	UAH Currency = "UAH"
+	USD Currency = "USD"
+	ZAR Currency = "ZAR"
+)
+
+// Valid indicates whether the value is a known member of the Currency enum.
+func (e Currency) Valid() bool {
+	switch e {
+	case AED:
+		return true
+	case AUD:
+		return true
+	case BRL:
+		return true
+	case CAD:
+		return true
+	case CHF:
+		return true
+	case CNY:
+		return true
+	case DKK:
+		return true
+	case EUR:
+		return true
+	case GBP:
+		return true
+	case HKD:
+		return true
+	case INR:
+		return true
+	case JPY:
+		return true
+	case KRW:
+		return true
+	case KZT:
+		return true
+	case MXN:
+		return true
+	case NOK:
+		return true
+	case NZD:
+		return true
+	case RUB:
+		return true
+	case SEK:
+		return true
+	case SGD:
+		return true
+	case TWD:
+		return true
+	case UAH:
+		return true
+	case USD:
+		return true
+	case ZAR:
+		return true
+	default:
+		return false
+	}
+}
 
 // Defines values for HealthResponseStatus.
 const (
@@ -30,6 +117,135 @@ func (e HealthResponseStatus) Valid() bool {
 	default:
 		return false
 	}
+}
+
+// Defines values for LoginChallengeResponseStatus.
+const (
+	TotpRequired LoginChallengeResponseStatus = "totp_required"
+)
+
+// Valid indicates whether the value is a known member of the LoginChallengeResponseStatus enum.
+func (e LoginChallengeResponseStatus) Valid() bool {
+	switch e {
+	case TotpRequired:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for OnboardingAccountAccountClass.
+const (
+	ASSET     OnboardingAccountAccountClass = "ASSET"
+	LIABILITY OnboardingAccountAccountClass = "LIABILITY"
+)
+
+// Valid indicates whether the value is a known member of the OnboardingAccountAccountClass enum.
+func (e OnboardingAccountAccountClass) Valid() bool {
+	switch e {
+	case ASSET:
+		return true
+	case LIABILITY:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for OnboardingAccountSubtype.
+const (
+	Bank       OnboardingAccountSubtype = "bank"
+	Brokerage  OnboardingAccountSubtype = "brokerage"
+	Cash       OnboardingAccountSubtype = "cash"
+	Loan       OnboardingAccountSubtype = "loan"
+	Mortgage   OnboardingAccountSubtype = "mortgage"
+	Other      OnboardingAccountSubtype = "other"
+	RealEstate OnboardingAccountSubtype = "real_estate"
+	Security   OnboardingAccountSubtype = "security"
+	Vehicle    OnboardingAccountSubtype = "vehicle"
+)
+
+// Valid indicates whether the value is a known member of the OnboardingAccountSubtype enum.
+func (e OnboardingAccountSubtype) Valid() bool {
+	switch e {
+	case Bank:
+		return true
+	case Brokerage:
+		return true
+	case Cash:
+		return true
+	case Loan:
+		return true
+	case Mortgage:
+		return true
+	case Other:
+		return true
+	case RealEstate:
+		return true
+	case Security:
+		return true
+	case Vehicle:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for ReconciliationMode.
+const (
+	AUTO    ReconciliationMode = "AUTO"
+	CONFIRM ReconciliationMode = "CONFIRM"
+)
+
+// Valid indicates whether the value is a known member of the ReconciliationMode enum.
+func (e ReconciliationMode) Valid() bool {
+	switch e {
+	case AUTO:
+		return true
+	case CONFIRM:
+		return true
+	default:
+		return false
+	}
+}
+
+// AuthResponse defines model for AuthResponse.
+type AuthResponse struct {
+	User User `json:"user"`
+}
+
+// ChangePasswordRequest defines model for ChangePasswordRequest.
+type ChangePasswordRequest struct {
+	CurrentPassword string   `json:"currentPassword"`
+	NewPassword     Password `json:"newPassword"`
+}
+
+// CompleteOnboardingRequest defines model for CompleteOnboardingRequest.
+type CompleteOnboardingRequest struct {
+	Account            OnboardingAccount          `json:"account"`
+	DisplayCurrency    Currency                   `json:"displayCurrency"`
+	FunctionalCurrency Currency                   `json:"functionalCurrency"`
+	ReconciliationMode ReconciliationMode         `json:"reconciliationMode"`
+	RecurringIncome    *OnboardingRecurringIncome `json:"recurringIncome,omitempty"`
+	Timezone           string                     `json:"timezone"`
+}
+
+// CompleteOnboardingResponse defines model for CompleteOnboardingResponse.
+type CompleteOnboardingResponse struct {
+	AccountSetupId         openapi_types.UUID  `json:"accountSetupId"`
+	RecurringIncomeSetupId *openapi_types.UUID `json:"recurringIncomeSetupId,omitempty"`
+	User                   User                `json:"user"`
+}
+
+// Currency defines model for Currency.
+type Currency string
+
+// DecimalAmount defines model for DecimalAmount.
+type DecimalAmount = string
+
+// DeleteAccountRequest defines model for DeleteAccountRequest.
+type DeleteAccountRequest struct {
+	Password string `json:"password"`
 }
 
 // ErrorEnvelope defines model for ErrorEnvelope.
@@ -51,19 +267,320 @@ type HealthResponse struct {
 // HealthResponseStatus defines model for HealthResponse.Status.
 type HealthResponseStatus string
 
+// LoginChallengeResponse defines model for LoginChallengeResponse.
+type LoginChallengeResponse struct {
+	ChallengeToken   string                       `json:"challengeToken"`
+	ExpiresInSeconds int                          `json:"expiresInSeconds"`
+	Status           LoginChallengeResponseStatus `json:"status"`
+}
+
+// LoginChallengeResponseStatus defines model for LoginChallengeResponse.Status.
+type LoginChallengeResponseStatus string
+
+// LoginRequest defines model for LoginRequest.
+type LoginRequest struct {
+	Email    openapi_types.Email `json:"email"`
+	Password string              `json:"password"`
+}
+
+// OnboardingAccount defines model for OnboardingAccount.
+type OnboardingAccount struct {
+	AccountClass       OnboardingAccountAccountClass `json:"accountClass"`
+	Currency           Currency                      `json:"currency"`
+	Name               string                        `json:"name"`
+	OpeningBalance     DecimalAmount                 `json:"openingBalance"`
+	OpeningBalanceDate openapi_types.Date            `json:"openingBalanceDate"`
+	Subtype            OnboardingAccountSubtype      `json:"subtype"`
+}
+
+// OnboardingAccountAccountClass defines model for OnboardingAccount.AccountClass.
+type OnboardingAccountAccountClass string
+
+// OnboardingAccountSubtype defines model for OnboardingAccount.Subtype.
+type OnboardingAccountSubtype string
+
+// OnboardingRecurringIncome defines model for OnboardingRecurringIncome.
+type OnboardingRecurringIncome struct {
+	Amount     PositiveDecimalAmount `json:"amount"`
+	Currency   Currency              `json:"currency"`
+	DayOfMonth int                   `json:"dayOfMonth"`
+	Name       string                `json:"name"`
+}
+
+// Password defines model for Password.
+type Password = string
+
+// PositiveDecimalAmount defines model for PositiveDecimalAmount.
+type PositiveDecimalAmount = string
+
+// ReconciliationMode defines model for ReconciliationMode.
+type ReconciliationMode string
+
+// RecoveryLoginRequest defines model for RecoveryLoginRequest.
+type RecoveryLoginRequest struct {
+	ChallengeToken string `json:"challengeToken"`
+	RecoveryCode   string `json:"recoveryCode"`
+}
+
+// RegisterRequest defines model for RegisterRequest.
+type RegisterRequest struct {
+	DisplayName string              `json:"displayName"`
+	Email       openapi_types.Email `json:"email"`
+	Password    Password            `json:"password"`
+}
+
+// Session defines model for Session.
+type Session struct {
+	CreatedAt  time.Time          `json:"createdAt"`
+	Current    bool               `json:"current"`
+	ExpiresAt  time.Time          `json:"expiresAt"`
+	Id         openapi_types.UUID `json:"id"`
+	LastSeenAt time.Time          `json:"lastSeenAt"`
+	UserAgent  *string            `json:"userAgent,omitempty"`
+}
+
+// SessionListResponse defines model for SessionListResponse.
+type SessionListResponse struct {
+	Sessions []Session `json:"sessions"`
+}
+
+// TOTPConfirmRequest defines model for TOTPConfirmRequest.
+type TOTPConfirmRequest struct {
+	Code string `json:"code"`
+}
+
+// TOTPConfirmResponse defines model for TOTPConfirmResponse.
+type TOTPConfirmResponse struct {
+	RecoveryCodes []string `json:"recoveryCodes"`
+}
+
+// TOTPDisableRequest defines model for TOTPDisableRequest.
+type TOTPDisableRequest struct {
+	Code     string `json:"code"`
+	Password string `json:"password"`
+}
+
+// TOTPLoginRequest defines model for TOTPLoginRequest.
+type TOTPLoginRequest struct {
+	ChallengeToken string `json:"challengeToken"`
+	Code           string `json:"code"`
+}
+
+// TOTPSetupResponse defines model for TOTPSetupResponse.
+type TOTPSetupResponse struct {
+	ProvisioningUri string `json:"provisioningUri"`
+	Secret          string `json:"secret"`
+}
+
+// UpdateProfileRequest defines model for UpdateProfileRequest.
+type UpdateProfileRequest struct {
+	CurrentPassword *string             `json:"currentPassword,omitempty"`
+	DisplayName     string              `json:"displayName"`
+	Email           openapi_types.Email `json:"email"`
+}
+
+// UpdateUserSettingsRequest defines model for UpdateUserSettingsRequest.
+type UpdateUserSettingsRequest struct {
+	DisplayCurrency    Currency           `json:"displayCurrency"`
+	FunctionalCurrency Currency           `json:"functionalCurrency"`
+	ReconciliationMode ReconciliationMode `json:"reconciliationMode"`
+	Timezone           string             `json:"timezone"`
+}
+
+// User defines model for User.
+type User struct {
+	DisplayCurrency     Currency            `json:"displayCurrency"`
+	DisplayName         string              `json:"displayName"`
+	Email               openapi_types.Email `json:"email"`
+	FunctionalCurrency  Currency            `json:"functionalCurrency"`
+	Id                  openapi_types.UUID  `json:"id"`
+	OnboardingCompleted bool                `json:"onboardingCompleted"`
+	ReconciliationMode  ReconciliationMode  `json:"reconciliationMode"`
+	Timezone            string              `json:"timezone"`
+	TotpEnabled         bool                `json:"totpEnabled"`
+}
+
+// BadRequest defines model for BadRequest.
+type BadRequest = ErrorEnvelope
+
+// Conflict defines model for Conflict.
+type Conflict = ErrorEnvelope
+
+// InternalError defines model for InternalError.
+type InternalError = ErrorEnvelope
+
+// NotFound defines model for NotFound.
+type NotFound = ErrorEnvelope
+
+// RateLimited defines model for RateLimited.
+type RateLimited = ErrorEnvelope
+
+// ServiceUnavailable defines model for ServiceUnavailable.
+type ServiceUnavailable = ErrorEnvelope
+
+// Unauthorized defines model for Unauthorized.
+type Unauthorized = ErrorEnvelope
+
+// LoginJSONRequestBody defines body for Login for application/json ContentType.
+type LoginJSONRequestBody = LoginRequest
+
+// VerifyLoginRecoveryCodeJSONRequestBody defines body for VerifyLoginRecoveryCode for application/json ContentType.
+type VerifyLoginRecoveryCodeJSONRequestBody = RecoveryLoginRequest
+
+// VerifyLoginTOTPJSONRequestBody defines body for VerifyLoginTOTP for application/json ContentType.
+type VerifyLoginTOTPJSONRequestBody = TOTPLoginRequest
+
+// RegisterJSONRequestBody defines body for Register for application/json ContentType.
+type RegisterJSONRequestBody = RegisterRequest
+
+// ConfirmTOTPJSONRequestBody defines body for ConfirmTOTP for application/json ContentType.
+type ConfirmTOTPJSONRequestBody = TOTPConfirmRequest
+
+// DisableTOTPJSONRequestBody defines body for DisableTOTP for application/json ContentType.
+type DisableTOTPJSONRequestBody = TOTPDisableRequest
+
+// CompleteOnboardingJSONRequestBody defines body for CompleteOnboarding for application/json ContentType.
+type CompleteOnboardingJSONRequestBody = CompleteOnboardingRequest
+
+// DeleteAccountJSONRequestBody defines body for DeleteAccount for application/json ContentType.
+type DeleteAccountJSONRequestBody = DeleteAccountRequest
+
+// UpdateProfileJSONRequestBody defines body for UpdateProfile for application/json ContentType.
+type UpdateProfileJSONRequestBody = UpdateProfileRequest
+
+// ChangePasswordJSONRequestBody defines body for ChangePassword for application/json ContentType.
+type ChangePasswordJSONRequestBody = ChangePasswordRequest
+
+// UpdateUserSettingsJSONRequestBody defines body for UpdateUserSettings for application/json ContentType.
+type UpdateUserSettingsJSONRequestBody = UpdateUserSettingsRequest
+
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
+	// Login Authenticate with email and password
+	// (POST /api/v1/auth/login)
+	Login(w http.ResponseWriter, r *http.Request)
+	// VerifyLoginRecoveryCode Complete a password login with a one-time recovery code
+	// (POST /api/v1/auth/login/recovery)
+	VerifyLoginRecoveryCode(w http.ResponseWriter, r *http.Request)
+	// VerifyLoginTOTP Complete a password login with an authenticator code
+	// (POST /api/v1/auth/login/totp)
+	VerifyLoginTOTP(w http.ResponseWriter, r *http.Request)
+	// Logout Revoke the current browser session
+	// (POST /api/v1/auth/logout)
+	Logout(w http.ResponseWriter, r *http.Request)
+	// GetCurrentUser Return the current authenticated user
+	// (GET /api/v1/auth/me)
+	GetCurrentUser(w http.ResponseWriter, r *http.Request)
+	// Register Register an identity and create its first browser session
+	// (POST /api/v1/auth/register)
+	Register(w http.ResponseWriter, r *http.Request)
+	// ListSessions List active sessions for the current user
+	// (GET /api/v1/auth/sessions)
+	ListSessions(w http.ResponseWriter, r *http.Request)
+	// RevokeSession Revoke one active session owned by the current user
+	// (DELETE /api/v1/auth/sessions/{sessionId})
+	RevokeSession(w http.ResponseWriter, r *http.Request, sessionId openapi_types.UUID)
+	// ConfirmTOTP Confirm pending TOTP and issue one-time recovery codes
+	// (POST /api/v1/auth/totp/confirm)
+	ConfirmTOTP(w http.ResponseWriter, r *http.Request)
+	// DisableTOTP Disable TOTP after password and authenticator verification
+	// (POST /api/v1/auth/totp/disable)
+	DisableTOTP(w http.ResponseWriter, r *http.Request)
+	// SetupTOTP Generate an encrypted pending TOTP credential
+	// (POST /api/v1/auth/totp/setup)
+	SetupTOTP(w http.ResponseWriter, r *http.Request)
 	// GetLiveness Confirm that the API process is running
 	// (GET /api/v1/health/live)
 	GetLiveness(w http.ResponseWriter, r *http.Request)
 	// GetReadiness Confirm that the API can serve database-backed requests
 	// (GET /api/v1/health/ready)
 	GetReadiness(w http.ResponseWriter, r *http.Request)
+	// CompleteOnboarding Save settings, first account, opening balance, and optional recurring income atomically
+	// (POST /api/v1/onboarding/complete)
+	CompleteOnboarding(w http.ResponseWriter, r *http.Request)
+	// DeleteAccount Permanently delete the user and all owned data after password confirmation
+	// (DELETE /api/v1/users/me)
+	DeleteAccount(w http.ResponseWriter, r *http.Request)
+	// UpdateProfile Update display name or email with password confirmation for email changes
+	// (PATCH /api/v1/users/me)
+	UpdateProfile(w http.ResponseWriter, r *http.Request)
+	// ChangePassword Change password and revoke all other sessions
+	// (PUT /api/v1/users/me/password)
+	ChangePassword(w http.ResponseWriter, r *http.Request)
+	// UpdateUserSettings Update timezone, currencies, and reconciliation preference
+	// (PATCH /api/v1/users/me/settings)
+	UpdateUserSettings(w http.ResponseWriter, r *http.Request)
 }
 
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
 
 type Unimplemented struct{}
+
+// Login Authenticate with email and password
+// (POST /api/v1/auth/login)
+func (_ Unimplemented) Login(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// VerifyLoginRecoveryCode Complete a password login with a one-time recovery code
+// (POST /api/v1/auth/login/recovery)
+func (_ Unimplemented) VerifyLoginRecoveryCode(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// VerifyLoginTOTP Complete a password login with an authenticator code
+// (POST /api/v1/auth/login/totp)
+func (_ Unimplemented) VerifyLoginTOTP(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Logout Revoke the current browser session
+// (POST /api/v1/auth/logout)
+func (_ Unimplemented) Logout(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GetCurrentUser Return the current authenticated user
+// (GET /api/v1/auth/me)
+func (_ Unimplemented) GetCurrentUser(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Register Register an identity and create its first browser session
+// (POST /api/v1/auth/register)
+func (_ Unimplemented) Register(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ListSessions List active sessions for the current user
+// (GET /api/v1/auth/sessions)
+func (_ Unimplemented) ListSessions(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// RevokeSession Revoke one active session owned by the current user
+// (DELETE /api/v1/auth/sessions/{sessionId})
+func (_ Unimplemented) RevokeSession(w http.ResponseWriter, r *http.Request, sessionId openapi_types.UUID) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ConfirmTOTP Confirm pending TOTP and issue one-time recovery codes
+// (POST /api/v1/auth/totp/confirm)
+func (_ Unimplemented) ConfirmTOTP(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// DisableTOTP Disable TOTP after password and authenticator verification
+// (POST /api/v1/auth/totp/disable)
+func (_ Unimplemented) DisableTOTP(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// SetupTOTP Generate an encrypted pending TOTP credential
+// (POST /api/v1/auth/totp/setup)
+func (_ Unimplemented) SetupTOTP(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
 
 // GetLiveness Confirm that the API process is running
 // (GET /api/v1/health/live)
@@ -77,6 +594,36 @@ func (_ Unimplemented) GetReadiness(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// CompleteOnboarding Save settings, first account, opening balance, and optional recurring income atomically
+// (POST /api/v1/onboarding/complete)
+func (_ Unimplemented) CompleteOnboarding(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// DeleteAccount Permanently delete the user and all owned data after password confirmation
+// (DELETE /api/v1/users/me)
+func (_ Unimplemented) DeleteAccount(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// UpdateProfile Update display name or email with password confirmation for email changes
+// (PATCH /api/v1/users/me)
+func (_ Unimplemented) UpdateProfile(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ChangePassword Change password and revoke all other sessions
+// (PUT /api/v1/users/me/password)
+func (_ Unimplemented) ChangePassword(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// UpdateUserSettings Update timezone, currencies, and reconciliation preference
+// (PATCH /api/v1/users/me/settings)
+func (_ Unimplemented) UpdateUserSettings(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // ServerInterfaceWrapper converts contexts to parameters.
 type ServerInterfaceWrapper struct {
 	Handler            ServerInterface
@@ -85,6 +632,172 @@ type ServerInterfaceWrapper struct {
 }
 
 type MiddlewareFunc func(http.Handler) http.Handler
+
+// Login operation middleware
+func (siw *ServerInterfaceWrapper) Login(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.Login(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// VerifyLoginRecoveryCode operation middleware
+func (siw *ServerInterfaceWrapper) VerifyLoginRecoveryCode(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.VerifyLoginRecoveryCode(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// VerifyLoginTOTP operation middleware
+func (siw *ServerInterfaceWrapper) VerifyLoginTOTP(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.VerifyLoginTOTP(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// Logout operation middleware
+func (siw *ServerInterfaceWrapper) Logout(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.Logout(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetCurrentUser operation middleware
+func (siw *ServerInterfaceWrapper) GetCurrentUser(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetCurrentUser(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// Register operation middleware
+func (siw *ServerInterfaceWrapper) Register(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.Register(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListSessions operation middleware
+func (siw *ServerInterfaceWrapper) ListSessions(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListSessions(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// RevokeSession operation middleware
+func (siw *ServerInterfaceWrapper) RevokeSession(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "sessionId" -------------
+	var sessionId openapi_types.UUID
+
+	err = runtime.BindStyledParameterWithOptions("simple", "sessionId", chi.URLParam(r, "sessionId"), &sessionId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "sessionId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.RevokeSession(w, r, sessionId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ConfirmTOTP operation middleware
+func (siw *ServerInterfaceWrapper) ConfirmTOTP(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ConfirmTOTP(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DisableTOTP operation middleware
+func (siw *ServerInterfaceWrapper) DisableTOTP(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DisableTOTP(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// SetupTOTP operation middleware
+func (siw *ServerInterfaceWrapper) SetupTOTP(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.SetupTOTP(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
 
 // GetLiveness operation middleware
 func (siw *ServerInterfaceWrapper) GetLiveness(w http.ResponseWriter, r *http.Request) {
@@ -105,6 +818,76 @@ func (siw *ServerInterfaceWrapper) GetReadiness(w http.ResponseWriter, r *http.R
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetReadiness(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CompleteOnboarding operation middleware
+func (siw *ServerInterfaceWrapper) CompleteOnboarding(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CompleteOnboarding(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// DeleteAccount operation middleware
+func (siw *ServerInterfaceWrapper) DeleteAccount(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.DeleteAccount(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateProfile operation middleware
+func (siw *ServerInterfaceWrapper) UpdateProfile(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateProfile(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ChangePassword operation middleware
+func (siw *ServerInterfaceWrapper) ChangePassword(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ChangePassword(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateUserSettings operation middleware
+func (siw *ServerInterfaceWrapper) UpdateUserSettings(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateUserSettings(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -233,6 +1016,54 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/v1/health/ready", wrapper.GetReadiness)
 	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/auth/register", wrapper.Register)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/auth/login", wrapper.Login)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/auth/login/totp", wrapper.VerifyLoginTOTP)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/auth/login/recovery", wrapper.VerifyLoginRecoveryCode)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/auth/logout", wrapper.Logout)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/auth/me", wrapper.GetCurrentUser)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/auth/sessions", wrapper.ListSessions)
+	})
+	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/api/v1/auth/sessions/{sessionId}", wrapper.RevokeSession)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/auth/totp/setup", wrapper.SetupTOTP)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/auth/totp/confirm", wrapper.ConfirmTOTP)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/auth/totp/disable", wrapper.DisableTOTP)
+	})
+	r.Group(func(r chi.Router) {
+		r.Delete(options.BaseURL+"/api/v1/users/me", wrapper.DeleteAccount)
+	})
+	r.Group(func(r chi.Router) {
+		r.Patch(options.BaseURL+"/api/v1/users/me", wrapper.UpdateProfile)
+	})
+	r.Group(func(r chi.Router) {
+		r.Put(options.BaseURL+"/api/v1/users/me/password", wrapper.ChangePassword)
+	})
+	r.Group(func(r chi.Router) {
+		r.Patch(options.BaseURL+"/api/v1/users/me/settings", wrapper.UpdateUserSettings)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/onboarding/complete", wrapper.CompleteOnboarding)
+	})
 
 	return r
 }
@@ -242,15 +1073,55 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 // const string: with thousands of chunks the chained `+` fold is several
 // times slower for the Go compiler than parsing a slice literal.
 var swaggerSpec = []string{
-	"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",
+	"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",
+	"8VmBF7y4X/w3AAD//w==",
 }
 
 // decodeSpec returns the embedded OpenAPI spec as raw JSON bytes,

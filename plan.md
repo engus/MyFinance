@@ -12,6 +12,22 @@ valuation snapshots. All accounting uses immutable double-entry transactions.
 The old application remains available only through Git history. The rebuild is delivered through one
 reviewed pull request per milestone.
 
+## Progress tracker
+
+| Milestone                             | Branch                             | Status                                  |
+| ------------------------------------- | ---------------------------------- | --------------------------------------- |
+| 0 — Specification and design          | `codex/rebuild-00-spec-design`     | Complete                                |
+| 1 — Local platform foundation         | `codex/rebuild-01-foundation`      | Complete                                |
+| 2 — Identity, security, onboarding    | `codex/rebuild-02-identity`        | Acceptance passed; PR #4 review pending |
+| 3 — Ledger and Cashflow               | `codex/rebuild-03-ledger-cashflow` | Queued                                  |
+| 4 — Recurring and Reconciliation      | `codex/rebuild-04-reconciliation`  | Queued                                  |
+| 5 — Assets and valuations             | `codex/rebuild-05-assets`          | Queued                                  |
+| 6 — FX worker and Dashboard           | `codex/rebuild-06-fx-dashboard`    | Queued                                  |
+| 7 — Data ownership and release review | `codex/rebuild-07-local-release`   | Queued                                  |
+
+Update this table in every milestone PR. A milestone is marked complete only after its acceptance
+checks pass; PR review/merge remains the gate for beginning the next branch.
+
 ## Product rules
 
 ### Cashflow and reconciliation

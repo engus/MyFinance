@@ -16,6 +16,20 @@ jobs:
   validate:
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:17.10-alpine3.22
+        env:
+          POSTGRES_DB: myfinance_test
+          POSTGRES_USER: myfinance
+          POSTGRES_PASSWORD: myfinance
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U myfinance -d myfinance_test" --health-interval 3s
+          --health-timeout 3s --health-retries 20
+    env:
+      TEST_DATABASE_URL: postgres://myfinance:myfinance@127.0.0.1:5432/myfinance_test?sslmode=disable
     steps:
       - uses: actions/checkout@v6
 
@@ -37,6 +51,11 @@ jobs:
 
       - name: Verify generated files are committed
         run: git diff --exit-code
+
+      - name: Migrate isolated integration database
+        run:
+          go run -tags postgres github.com/golang-migrate/migrate/v4/cmd/migrate@v4.19.1 -path
+          db/migrations -database "$TEST_DATABASE_URL" up
 
       - name: Run repository checks
         run: make ci

@@ -11,6 +11,9 @@ x-app-environment: &app-environment
   API_PORT: 8080
   DATABASE_URL: postgres://${POSTGRES_USER:-myfinance}:${POSTGRES_PASSWORD:-myfinance}@postgres:5432/${POSTGRES_DB:-myfinance}?sslmode=disable
   LOG_LEVEL: ${LOG_LEVEL:-info}
+  SESSION_TTL: ${SESSION_TTL:-720h}
+  SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-false}
+  TOTP_ENCRYPTION_KEY: ${TOTP_ENCRYPTION_KEY:-MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=}
 
 services:
   postgres:
@@ -74,6 +77,22 @@ services:
       - up
     restart: "no"
 
+  seed:
+    image: postgres:17.10-alpine3.22
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    environment:
+      <<: *postgres-environment
+      PGPASSWORD: ${POSTGRES_PASSWORD:-myfinance}
+    volumes:
+      - ./db/seed:/seed:ro
+    command:
+      - sh
+      - -c
+      - psql -h postgres -U "$$POSTGRES_USER" -d "$$POSTGRES_DB" -v ON_ERROR_STOP=1 -f /seed/dev.sql
+    restart: "no"
+
   api:
     build:
       context: .
@@ -81,7 +100,7 @@ services:
       target: development
     environment: *app-environment
     depends_on:
-      migrate:
+      seed:
         condition: service_completed_successfully
     command: ["go", "run", "./cmd/api"]
     ports:
@@ -106,7 +125,7 @@ services:
       <<: *app-environment
       WORKER_INTERVAL: ${WORKER_INTERVAL:-24h}
     depends_on:
-      migrate:
+      seed:
         condition: service_completed_successfully
     command: ["go", "run", "./cmd/worker"]
     volumes:
