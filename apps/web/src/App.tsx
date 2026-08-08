@@ -1,62 +1,45 @@
-import { useEffect, useState } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { LoginPage } from './pages/LoginPage';
-import { RegisterPage } from './pages/RegisterPage';
-import { DashboardPage } from './pages/DashboardPage';
-import { CashflowPage } from './pages/CashflowPage';
-import { fetchCurrentUser } from './api/auth';
+import { Navigate, Route, Routes } from "react-router-dom";
 
-interface CurrentUser {
-  id: string;
-  email: string;
-}
+import { AuthProvider } from "./auth/AuthContext";
+import {
+  PublicOnly,
+  RequireAuth,
+  RequireCompletedOnboarding,
+  RequirePendingOnboarding,
+} from "./auth/AuthRoutes";
+import { AppShell } from "./components/AppShell";
+import { AssetsPage } from "./pages/AssetsPage";
+import { CashflowPage } from "./pages/CashflowPage";
+import { DashboardPage } from "./pages/DashboardPage";
+import { LoginPage } from "./pages/LoginPage";
+import { OnboardingPage } from "./pages/OnboardingPage";
+import { RegisterPage } from "./pages/RegisterPage";
+import { SettingsPage } from "./pages/SettingsPage";
 
 export function App() {
-  const [user, setUser] = useState<CurrentUser | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    fetchCurrentUser()
-      .then(setUser)
-      .catch(() => setUser(null))
-      .finally(() => setLoading(false));
-  }, []);
-
-  if (loading) return <p>Loading...</p>;
-
   return (
-    <BrowserRouter>
+    <AuthProvider>
       <Routes>
-        <Route
-          path="/login"
-          element={
-            user ? (
-              <Navigate to="/dashboard" />
-            ) : (
-              <LoginPage onSuccess={() => window.location.assign('/dashboard')} />
-            )
-          }
-        />
-        <Route
-          path="/register"
-          element={
-            user ? (
-              <Navigate to="/dashboard" />
-            ) : (
-              <RegisterPage onSuccess={() => window.location.assign('/dashboard')} />
-            )
-          }
-        />
-        <Route
-          path="/dashboard"
-          element={user ? <DashboardPage user={user} /> : <Navigate to="/login" />}
-        />
-        <Route
-          path="/cashflow"
-          element={user ? <CashflowPage /> : <Navigate to="/login" />}
-        />
-        <Route path="*" element={<Navigate to={user ? '/dashboard' : '/login'} />} />
+        <Route element={<PublicOnly />}>
+          <Route path="login" element={<LoginPage />} />
+          <Route path="register" element={<RegisterPage />} />
+        </Route>
+        <Route element={<RequireAuth />}>
+          <Route element={<RequirePendingOnboarding />}>
+            <Route path="onboarding" element={<OnboardingPage />} />
+          </Route>
+          <Route element={<RequireCompletedOnboarding />}>
+            <Route element={<AppShell />}>
+              <Route index element={<Navigate replace to="/dashboard" />} />
+              <Route path="dashboard" element={<DashboardPage />} />
+              <Route path="cashflow" element={<CashflowPage />} />
+              <Route path="assets" element={<AssetsPage />} />
+              <Route path="settings" element={<SettingsPage />} />
+            </Route>
+          </Route>
+        </Route>
+        <Route path="*" element={<Navigate replace to="/dashboard" />} />
       </Routes>
-    </BrowserRouter>
+    </AuthProvider>
   );
 }

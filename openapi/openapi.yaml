@@ -1,0 +1,2230 @@
+openapi: 3.1.0
+info:
+  title: MyFinance API
+  version: 0.4.0
+  description: REST contract for the MyFinance personal-finance web application.
+servers:
+  - url: /api/v1
+paths:
+  /api/v1/health/live:
+    get:
+      operationId: getLiveness
+      summary: Confirm that the API process is running
+      tags: [Health]
+      responses:
+        "200":
+          description: API process is alive
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+  /api/v1/health/ready:
+    get:
+      operationId: getReadiness
+      summary: Confirm that the API can serve database-backed requests
+      tags: [Health]
+      responses:
+        "200":
+          description: API and database are ready
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+  /api/v1/auth/register:
+    post:
+      operationId: register
+      summary: Register an identity and create its first browser session
+      tags: [Authentication]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterRequest"
+      responses:
+        "201":
+          description: Identity and session created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /api/v1/auth/login:
+    post:
+      operationId: login
+      summary: Authenticate with email and password
+      tags: [Authentication]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: Session created because TOTP is disabled
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "202":
+          description: Password accepted and a one-time TOTP challenge was created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginChallengeResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+  /api/v1/auth/login/totp:
+    post:
+      operationId: verifyLoginTOTP
+      summary: Complete a password login with an authenticator code
+      tags: [Authentication]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TOTPLoginRequest"
+      responses:
+        "200":
+          description: Authenticator code accepted and session created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+  /api/v1/auth/login/recovery:
+    post:
+      operationId: verifyLoginRecoveryCode
+      summary: Complete a password login with a one-time recovery code
+      tags: [Authentication]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RecoveryLoginRequest"
+      responses:
+        "200":
+          description: Recovery code consumed and session created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+  /api/v1/auth/logout:
+    post:
+      operationId: logout
+      summary: Revoke the current browser session
+      tags: [Authentication]
+      responses:
+        "204":
+          description: Browser session revoked or already absent
+        "500":
+          $ref: "#/components/responses/InternalError"
+  /api/v1/auth/me:
+    get:
+      operationId: getCurrentUser
+      summary: Return the current authenticated user
+      tags: [Authentication]
+      responses:
+        "200":
+          description: Authenticated user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+  /api/v1/auth/sessions:
+    get:
+      operationId: listSessions
+      summary: List active sessions for the current user
+      tags: [Authentication]
+      responses:
+        "200":
+          description: Active sessions
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionListResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /api/v1/auth/sessions/{sessionId}:
+    delete:
+      operationId: revokeSession
+      summary: Revoke one active session owned by the current user
+      tags: [Authentication]
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: Session revoked
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /api/v1/auth/totp/setup:
+    post:
+      operationId: setupTOTP
+      summary: Generate an encrypted pending TOTP credential
+      tags: [Authentication]
+      responses:
+        "201":
+          description: Pending TOTP credential created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TOTPSetupResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /api/v1/auth/totp/confirm:
+    post:
+      operationId: confirmTOTP
+      summary: Confirm pending TOTP and issue one-time recovery codes
+      tags: [Authentication]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TOTPConfirmRequest"
+      responses:
+        "200":
+          description: TOTP enabled and recovery codes returned once
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TOTPConfirmResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /api/v1/auth/totp/disable:
+    post:
+      operationId: disableTOTP
+      summary: Disable TOTP after password and authenticator verification
+      tags: [Authentication]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TOTPDisableRequest"
+      responses:
+        "204":
+          description: TOTP and recovery codes removed
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /api/v1/users/me:
+    patch:
+      operationId: updateProfile
+      summary: Update display name or email with password confirmation for email changes
+      tags: [Users]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateProfileRequest"
+      responses:
+        "200":
+          description: Updated profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/Conflict"
+    delete:
+      operationId: deleteAccount
+      summary: Permanently delete the user and all owned data after password confirmation
+      tags: [Users]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeleteAccountRequest"
+      responses:
+        "204":
+          description: User and owned data deleted
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /api/v1/users/me/password:
+    put:
+      operationId: changePassword
+      summary: Change password and revoke all other sessions
+      tags: [Users]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChangePasswordRequest"
+      responses:
+        "204":
+          description: Password changed and other sessions revoked
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /api/v1/users/me/settings:
+    patch:
+      operationId: updateUserSettings
+      summary: Update timezone, currencies, and reconciliation preference
+      tags: [Users]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateUserSettingsRequest"
+      responses:
+        "200":
+          description: Updated settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /api/v1/onboarding/complete:
+    post:
+      operationId: completeOnboarding
+      summary:
+        Save settings, first account, opening balance, and optional recurring income atomically
+      tags: [Onboarding]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CompleteOnboardingRequest"
+      responses:
+        "200":
+          description: Onboarding completed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CompleteOnboardingResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /api/v1/accounts:
+    get:
+      operationId: listAccounts
+      summary: List owned user accounts with exact ledger balances
+      tags: [Cashflow]
+      parameters:
+        - name: includeArchived
+          in: query
+          schema:
+            type: boolean
+            default: false
+      responses:
+        "200":
+          description: Owned accounts
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccountListResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      operationId: createAccount
+      summary: Create an account and optionally post its opening balance atomically
+      tags: [Cashflow]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateAccountRequest"
+      responses:
+        "201":
+          description: Account created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Account"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /api/v1/accounts/{accountId}:
+    patch:
+      operationId: updateAccount
+      summary: Rename, archive, restore, or change an unused account currency
+      tags: [Cashflow]
+      parameters:
+        - $ref: "#/components/parameters/AccountId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateAccountRequest"
+      responses:
+        "200":
+          description: Account updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Account"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /api/v1/categories:
+    get:
+      operationId: listCategories
+      summary: List owned income and expense categories
+      tags: [Cashflow]
+      parameters:
+        - name: includeArchived
+          in: query
+          schema:
+            type: boolean
+            default: false
+      responses:
+        "200":
+          description: Owned categories
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CategoryListResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      operationId: createCategory
+      summary: Create a category and its private ledger account atomically
+      tags: [Cashflow]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCategoryRequest"
+      responses:
+        "201":
+          description: Category created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Category"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /api/v1/categories/{categoryId}:
+    patch:
+      operationId: updateCategory
+      summary: Rename, archive, or restore an owned category
+      tags: [Cashflow]
+      parameters:
+        - $ref: "#/components/parameters/CategoryId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateCategoryRequest"
+      responses:
+        "200":
+          description: Category updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Category"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /api/v1/transactions:
+    get:
+      operationId: listTransactions
+      summary: List immutable operations using stable cursor pagination
+      tags: [Cashflow]
+      parameters:
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: accountId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: categoryId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: type
+          in: query
+          schema:
+            $ref: "#/components/schemas/TransactionType"
+        - name: cursor
+          in: query
+          schema:
+            type: string
+            maxLength: 200
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 25
+      responses:
+        "200":
+          description: Immutable operation page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TransactionListResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      operationId: createTransaction
+      summary: Post one typed financial operation as a balanced transaction
+      tags: [Cashflow]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTransactionRequest"
+      responses:
+        "201":
+          description: Operation posted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Transaction"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /api/v1/transactions/{transactionId}/reversal:
+    post:
+      operationId: reverseTransaction
+      summary: Preserve and reverse an owned posted transaction
+      tags: [Cashflow]
+      parameters:
+        - $ref: "#/components/parameters/TransactionId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReversalRequest"
+      responses:
+        "201":
+          description: Reversal posted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Transaction"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /api/v1/transactions/{transactionId}/replacement:
+    post:
+      operationId: replaceTransaction
+      summary: Atomically reverse an operation and post its corrected replacement
+      tags: [Cashflow]
+      parameters:
+        - $ref: "#/components/parameters/TransactionId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReplacementRequest"
+      responses:
+        "201":
+          description: Original reversed and corrected operation posted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReplacementResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /api/v1/recurring-templates:
+    get:
+      operationId: listRecurringTemplates
+      summary: List owned recurring operation templates
+      tags: [Recurring]
+      parameters:
+        - name: includeArchived
+          in: query
+          schema:
+            type: boolean
+            default: false
+      responses:
+        "200":
+          description: Recurring templates
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecurringTemplateListResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      operationId: createRecurringTemplate
+      summary: Create a typed recurring operation template
+      tags: [Recurring]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateRecurringTemplateRequest"
+      responses:
+        "201":
+          description: Recurring template created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecurringTemplate"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /api/v1/recurring-templates/{templateId}:
+    patch:
+      operationId: updateRecurringTemplate
+      summary: Edit, pause, resume, archive, or restore a recurring template
+      tags: [Recurring]
+      parameters:
+        - $ref: "#/components/parameters/TemplateId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateRecurringTemplateRequest"
+      responses:
+        "200":
+          description: Recurring template updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecurringTemplate"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /api/v1/reconciliation/status:
+    get:
+      operationId: getReconciliationStatus
+      summary: Return the reminder window and per-account completion for one month
+      tags: [Reconciliation]
+      parameters:
+        - name: periodEnd
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: Reconciliation status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReconciliationStatus"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /api/v1/reconciliation/prepare:
+    post:
+      operationId: prepareReconciliation
+      summary: Preview in CONFIRM mode or atomically apply in AUTO mode
+      tags: [Reconciliation]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PrepareReconciliationRequest"
+      responses:
+        "200":
+          description: Preview created or reconciliation applied
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReconciliationSubmissionResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /api/v1/reconciliation/previews/{previewId}/confirm:
+    post:
+      operationId: confirmReconciliation
+      summary: Revalidate a reconciliation preview and apply it atomically
+      tags: [Reconciliation]
+      parameters:
+        - $ref: "#/components/parameters/PreviewId"
+      responses:
+        "201":
+          description: Reconciliation applied
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Reconciliation"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /api/v1/assets:
+    get:
+      operationId: listAssets
+      summary: List manual asset profiles and their current owned values
+      tags: [Assets]
+      parameters:
+        - name: includeArchived
+          in: query
+          schema:
+            type: boolean
+            default: false
+      responses:
+        "200":
+          description: Asset profiles and allocation inputs
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AssetListResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      operationId: createAsset
+      summary: Create a manual asset profile and optionally post its purchase atomically
+      tags: [Assets]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateAssetRequest"
+      responses:
+        "201":
+          description: Asset profile created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Asset"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /api/v1/assets/{assetId}:
+    get:
+      operationId: getAsset
+      summary: Return one owned manual asset profile
+      tags: [Assets]
+      parameters:
+        - $ref: "#/components/parameters/AssetId"
+      responses:
+        "200":
+          description: Asset profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Asset"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    patch:
+      operationId: updateAsset
+      summary: Update, archive, or restore a manual asset profile
+      tags: [Assets]
+      parameters:
+        - $ref: "#/components/parameters/AssetId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateAssetRequest"
+      responses:
+        "200":
+          description: Asset profile updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Asset"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /api/v1/assets/{assetId}/valuations:
+    get:
+      operationId: listAssetValuations
+      summary: List immutable manual valuation snapshots for one asset
+      tags: [Assets]
+      parameters:
+        - $ref: "#/components/parameters/AssetId"
+      responses:
+        "200":
+          description: Asset valuation history
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AssetValuationListResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+    post:
+      operationId: createAssetValuation
+      summary: Record a manual valuation and post its idempotent revaluation delta
+      tags: [Assets]
+      parameters:
+        - $ref: "#/components/parameters/AssetId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateAssetValuationRequest"
+      responses:
+        "201":
+          description: Valuation snapshot recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AssetValuation"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+components:
+  parameters:
+    AccountId:
+      name: accountId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    CategoryId:
+      name: categoryId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    TransactionId:
+      name: transactionId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    TemplateId:
+      name: templateId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    PreviewId:
+      name: previewId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    AssetId:
+      name: assetId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+  responses:
+    BadRequest:
+      description: Request validation failed
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorEnvelope"
+    Unauthorized:
+      description: Authentication or credential verification failed
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorEnvelope"
+    Conflict:
+      description: Resource state conflicts with the request
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorEnvelope"
+    NotFound:
+      description: Owned resource was not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorEnvelope"
+    RateLimited:
+      description: Too many attempts
+      headers:
+        Retry-After:
+          schema:
+            type: integer
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorEnvelope"
+    InternalError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorEnvelope"
+    ServiceUnavailable:
+      description: Required dependency unavailable
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorEnvelope"
+  schemas:
+    HealthResponse:
+      type: object
+      additionalProperties: false
+      required: [status, service, version]
+      properties:
+        status:
+          type: string
+          const: ok
+        service:
+          type: string
+        version:
+          type: string
+    ErrorEnvelope:
+      type: object
+      additionalProperties: false
+      required: [error]
+      properties:
+        error:
+          type: object
+          additionalProperties: false
+          required: [code, message]
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+            fields:
+              type: object
+              additionalProperties:
+                type: string
+    RegisterRequest:
+      type: object
+      additionalProperties: false
+      required: [email, displayName, password]
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 320
+        displayName:
+          type: string
+          minLength: 1
+          maxLength: 100
+        password:
+          $ref: "#/components/schemas/Password"
+    LoginRequest:
+      type: object
+      additionalProperties: false
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 320
+        password:
+          type: string
+          minLength: 8
+          maxLength: 128
+    TOTPLoginRequest:
+      type: object
+      additionalProperties: false
+      required: [challengeToken, code]
+      properties:
+        challengeToken:
+          type: string
+          minLength: 40
+          maxLength: 100
+        code:
+          type: string
+          pattern: "^[0-9]{6}$"
+    RecoveryLoginRequest:
+      type: object
+      additionalProperties: false
+      required: [challengeToken, recoveryCode]
+      properties:
+        challengeToken:
+          type: string
+          minLength: 40
+          maxLength: 100
+        recoveryCode:
+          type: string
+          minLength: 16
+          maxLength: 32
+    LoginChallengeResponse:
+      type: object
+      additionalProperties: false
+      required: [status, challengeToken, expiresInSeconds]
+      properties:
+        status:
+          type: string
+          const: totp_required
+        challengeToken:
+          type: string
+        expiresInSeconds:
+          type: integer
+          minimum: 1
+    AuthResponse:
+      type: object
+      additionalProperties: false
+      required: [user]
+      properties:
+        user:
+          $ref: "#/components/schemas/User"
+    User:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - email
+        - displayName
+        - timezone
+        - functionalCurrency
+        - displayCurrency
+        - reconciliationMode
+        - onboardingCompleted
+        - totpEnabled
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        displayName:
+          type: string
+        timezone:
+          type: string
+        functionalCurrency:
+          $ref: "#/components/schemas/Currency"
+        displayCurrency:
+          $ref: "#/components/schemas/Currency"
+        reconciliationMode:
+          $ref: "#/components/schemas/ReconciliationMode"
+        onboardingCompleted:
+          type: boolean
+        totpEnabled:
+          type: boolean
+    SessionListResponse:
+      type: object
+      additionalProperties: false
+      required: [sessions]
+      properties:
+        sessions:
+          type: array
+          items:
+            $ref: "#/components/schemas/Session"
+    Session:
+      type: object
+      additionalProperties: false
+      required: [id, createdAt, lastSeenAt, expiresAt, current]
+      properties:
+        id:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+        lastSeenAt:
+          type: string
+          format: date-time
+        expiresAt:
+          type: string
+          format: date-time
+        userAgent:
+          type: string
+        current:
+          type: boolean
+    TOTPSetupResponse:
+      type: object
+      additionalProperties: false
+      required: [secret, provisioningUri]
+      properties:
+        secret:
+          type: string
+        provisioningUri:
+          type: string
+          format: uri
+    TOTPConfirmRequest:
+      type: object
+      additionalProperties: false
+      required: [code]
+      properties:
+        code:
+          type: string
+          pattern: "^[0-9]{6}$"
+    TOTPConfirmResponse:
+      type: object
+      additionalProperties: false
+      required: [recoveryCodes]
+      properties:
+        recoveryCodes:
+          type: array
+          minItems: 10
+          maxItems: 10
+          items:
+            type: string
+    TOTPDisableRequest:
+      type: object
+      additionalProperties: false
+      required: [password, code]
+      properties:
+        password:
+          type: string
+          minLength: 8
+          maxLength: 128
+        code:
+          type: string
+          pattern: "^[0-9]{6}$"
+    UpdateProfileRequest:
+      type: object
+      additionalProperties: false
+      required: [email, displayName]
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 320
+        displayName:
+          type: string
+          minLength: 1
+          maxLength: 100
+        currentPassword:
+          type: string
+          maxLength: 128
+    ChangePasswordRequest:
+      type: object
+      additionalProperties: false
+      required: [currentPassword, newPassword]
+      properties:
+        currentPassword:
+          type: string
+          minLength: 8
+          maxLength: 128
+        newPassword:
+          $ref: "#/components/schemas/Password"
+    UpdateUserSettingsRequest:
+      type: object
+      additionalProperties: false
+      required: [timezone, functionalCurrency, displayCurrency, reconciliationMode]
+      properties:
+        timezone:
+          type: string
+          minLength: 1
+          maxLength: 100
+        functionalCurrency:
+          $ref: "#/components/schemas/Currency"
+        displayCurrency:
+          $ref: "#/components/schemas/Currency"
+        reconciliationMode:
+          $ref: "#/components/schemas/ReconciliationMode"
+    DeleteAccountRequest:
+      type: object
+      additionalProperties: false
+      required: [password]
+      properties:
+        password:
+          type: string
+          minLength: 8
+          maxLength: 128
+    CompleteOnboardingRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - timezone
+        - functionalCurrency
+        - displayCurrency
+        - reconciliationMode
+        - account
+      properties:
+        timezone:
+          type: string
+          minLength: 1
+          maxLength: 100
+        functionalCurrency:
+          $ref: "#/components/schemas/Currency"
+        displayCurrency:
+          $ref: "#/components/schemas/Currency"
+        reconciliationMode:
+          $ref: "#/components/schemas/ReconciliationMode"
+        account:
+          $ref: "#/components/schemas/OnboardingAccount"
+        recurringIncome:
+          $ref: "#/components/schemas/OnboardingRecurringIncome"
+    OnboardingAccount:
+      type: object
+      additionalProperties: false
+      required: [name, accountClass, subtype, currency, openingBalance, openingBalanceDate]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        accountClass:
+          type: string
+          enum: [ASSET, LIABILITY]
+        subtype:
+          type: string
+          enum: [bank, cash, brokerage, real_estate, vehicle, security, mortgage, loan, other]
+        currency:
+          $ref: "#/components/schemas/Currency"
+        openingBalance:
+          $ref: "#/components/schemas/DecimalAmount"
+        openingBalanceDate:
+          type: string
+          format: date
+    OnboardingRecurringIncome:
+      type: object
+      additionalProperties: false
+      required: [name, amount, currency, dayOfMonth]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        amount:
+          $ref: "#/components/schemas/PositiveDecimalAmount"
+        currency:
+          $ref: "#/components/schemas/Currency"
+        dayOfMonth:
+          type: integer
+          minimum: 1
+          maximum: 28
+    CompleteOnboardingResponse:
+      type: object
+      additionalProperties: false
+      required: [user, accountSetupId]
+      properties:
+        user:
+          $ref: "#/components/schemas/User"
+        accountSetupId:
+          type: string
+          format: uuid
+        recurringIncomeSetupId:
+          type: string
+          format: uuid
+    AccountListResponse:
+      type: object
+      additionalProperties: false
+      required: [accounts]
+      properties:
+        accounts:
+          type: array
+          items:
+            $ref: "#/components/schemas/Account"
+    Account:
+      type: object
+      additionalProperties: false
+      required: [id, name, accountClass, subtype, currency, balance, archived, hasPostings]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        accountClass:
+          $ref: "#/components/schemas/UserAccountClass"
+        subtype:
+          $ref: "#/components/schemas/AccountSubtype"
+        currency:
+          $ref: "#/components/schemas/Currency"
+        balance:
+          $ref: "#/components/schemas/DecimalAmount"
+        archived:
+          type: boolean
+        hasPostings:
+          type: boolean
+    CreateAccountRequest:
+      type: object
+      additionalProperties: false
+      required: [name, accountClass, subtype, currency]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        accountClass:
+          $ref: "#/components/schemas/UserAccountClass"
+        subtype:
+          $ref: "#/components/schemas/AccountSubtype"
+        currency:
+          $ref: "#/components/schemas/Currency"
+        openingBalance:
+          $ref: "#/components/schemas/DecimalAmount"
+        openingBalanceDate:
+          type: string
+          format: date
+        idempotencyKey:
+          type: string
+          format: uuid
+    UpdateAccountRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        currency:
+          $ref: "#/components/schemas/Currency"
+        archived:
+          type: boolean
+    CategoryListResponse:
+      type: object
+      additionalProperties: false
+      required: [categories]
+      properties:
+        categories:
+          type: array
+          items:
+            $ref: "#/components/schemas/Category"
+    Category:
+      type: object
+      additionalProperties: false
+      required: [id, name, direction, archived]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        direction:
+          $ref: "#/components/schemas/CategoryDirection"
+        archived:
+          type: boolean
+    CreateCategoryRequest:
+      type: object
+      additionalProperties: false
+      required: [name, direction]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        direction:
+          $ref: "#/components/schemas/CategoryDirection"
+    UpdateCategoryRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        archived:
+          type: boolean
+    CreateTransactionRequest:
+      type: object
+      additionalProperties: false
+      description: Typed operation contract. Raw journal entries are never accepted from clients.
+      required: [type, eventDate, amount, idempotencyKey]
+      properties:
+        type:
+          type: string
+          enum: [OPENING_BALANCE, INCOME, EXPENSE, TRANSFER, ASSET_PURCHASE]
+        eventDate:
+          type: string
+          format: date
+        amount:
+          $ref: "#/components/schemas/PositiveDecimalAmount"
+        idempotencyKey:
+          type: string
+          format: uuid
+        description:
+          type: string
+          minLength: 1
+          maxLength: 500
+        accountId:
+          type: string
+          format: uuid
+          description: Required for opening balance, income, and expense.
+        categoryId:
+          type: string
+          format: uuid
+          description: Required for income and expense.
+        sourceAccountId:
+          type: string
+          format: uuid
+          description: Required for transfer and asset purchase.
+        destinationAccountId:
+          type: string
+          format: uuid
+          description: Required for transfer and asset purchase.
+    TransactionListResponse:
+      type: object
+      additionalProperties: false
+      required: [transactions]
+      properties:
+        transactions:
+          type: array
+          items:
+            $ref: "#/components/schemas/Transaction"
+        nextCursor:
+          type: string
+    Transaction:
+      type: object
+      additionalProperties: false
+      required: [id, type, eventDate, amount, currency, primaryAccountName, status, postedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          $ref: "#/components/schemas/TransactionType"
+        eventDate:
+          type: string
+          format: date
+        description:
+          type: string
+        amount:
+          $ref: "#/components/schemas/PositiveDecimalAmount"
+        currency:
+          $ref: "#/components/schemas/Currency"
+        primaryAccountName:
+          type: string
+        primaryAccountId:
+          type: string
+          format: uuid
+        counterpartyName:
+          type: string
+        counterpartyAccountId:
+          type: string
+          format: uuid
+        categoryName:
+          type: string
+        categoryId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [POSTED, REVERSED, REVERSAL, REPLACED]
+        reversesTransactionId:
+          type: string
+          format: uuid
+        replacesTransactionId:
+          type: string
+          format: uuid
+        postedAt:
+          type: string
+          format: date-time
+    ReversalRequest:
+      type: object
+      additionalProperties: false
+      required: [idempotencyKey]
+      properties:
+        idempotencyKey:
+          type: string
+          format: uuid
+        description:
+          type: string
+          minLength: 1
+          maxLength: 500
+    ReplacementRequest:
+      type: object
+      additionalProperties: false
+      required: [reversalIdempotencyKey, operation]
+      properties:
+        reversalIdempotencyKey:
+          type: string
+          format: uuid
+        operation:
+          $ref: "#/components/schemas/CreateTransactionRequest"
+    ReplacementResponse:
+      type: object
+      additionalProperties: false
+      required: [reversal, replacement]
+      properties:
+        reversal:
+          $ref: "#/components/schemas/Transaction"
+        replacement:
+          $ref: "#/components/schemas/Transaction"
+    RecurringTemplateListResponse:
+      type: object
+      additionalProperties: false
+      required: [templates]
+      properties:
+        templates:
+          type: array
+          items:
+            $ref: "#/components/schemas/RecurringTemplate"
+    RecurringTemplate:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - name
+        - type
+        - amount
+        - currency
+        - frequency
+        - intervalUnit
+        - intervalCount
+        - startDate
+        - nextScheduledDate
+        - status
+        - archived
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        type:
+          $ref: "#/components/schemas/RecurringOperationType"
+        amount:
+          $ref: "#/components/schemas/PositiveDecimalAmount"
+        currency:
+          $ref: "#/components/schemas/Currency"
+        description:
+          type: string
+        accountId:
+          type: string
+          format: uuid
+        accountName:
+          type: string
+        categoryId:
+          type: string
+          format: uuid
+        categoryName:
+          type: string
+        sourceAccountId:
+          type: string
+          format: uuid
+        sourceAccountName:
+          type: string
+        destinationAccountId:
+          type: string
+          format: uuid
+        destinationAccountName:
+          type: string
+        frequency:
+          $ref: "#/components/schemas/RecurringFrequency"
+        intervalUnit:
+          $ref: "#/components/schemas/RecurringIntervalUnit"
+        intervalCount:
+          type: integer
+        startDate:
+          type: string
+          format: date
+        nextScheduledDate:
+          type: string
+          format: date
+        endDate:
+          type: string
+          format: date
+        lastGeneratedDate:
+          type: string
+          format: date
+        status:
+          $ref: "#/components/schemas/RecurringTemplateStatus"
+        pauseReason:
+          type: string
+        archived:
+          type: boolean
+    CreateRecurringTemplateRequest:
+      type: object
+      additionalProperties: false
+      required: [name, type, amount, frequency, startDate]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        type:
+          $ref: "#/components/schemas/RecurringOperationType"
+        amount:
+          $ref: "#/components/schemas/PositiveDecimalAmount"
+        description:
+          type: string
+          minLength: 1
+          maxLength: 500
+        accountId:
+          type: string
+          format: uuid
+        categoryId:
+          type: string
+          format: uuid
+        sourceAccountId:
+          type: string
+          format: uuid
+        destinationAccountId:
+          type: string
+          format: uuid
+        frequency:
+          $ref: "#/components/schemas/RecurringFrequency"
+        intervalUnit:
+          $ref: "#/components/schemas/RecurringIntervalUnit"
+        intervalCount:
+          type: integer
+          minimum: 1
+          maximum: 365
+        startDate:
+          type: string
+          format: date
+        endDate:
+          type: string
+          format: date
+    UpdateRecurringTemplateRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        amount:
+          $ref: "#/components/schemas/PositiveDecimalAmount"
+        description:
+          type: string
+          minLength: 1
+          maxLength: 500
+        endDate:
+          type: string
+          format: date
+        status:
+          $ref: "#/components/schemas/RecurringTemplateStatus"
+        archived:
+          type: boolean
+    ReconciliationStatus:
+      type: object
+      additionalProperties: false
+      required:
+        - today
+        - suggestedPeriodEnd
+        - periodEnd
+        - promptOpen
+        - promptStart
+        - promptEnd
+        - complete
+        - accounts
+      properties:
+        today:
+          type: string
+          format: date
+        suggestedPeriodEnd:
+          type: string
+          format: date
+        periodEnd:
+          type: string
+          format: date
+        promptOpen:
+          type: boolean
+        promptStart:
+          type: string
+          format: date
+        promptEnd:
+          type: string
+          format: date
+        complete:
+          type: boolean
+        accounts:
+          type: array
+          items:
+            $ref: "#/components/schemas/AccountReconciliationStatus"
+    AccountReconciliationStatus:
+      type: object
+      additionalProperties: false
+      required: [accountId, accountName, currency, ledgerBalance, status, gapMonths, multiMonthGap]
+      properties:
+        accountId:
+          type: string
+          format: uuid
+        accountName:
+          type: string
+        currency:
+          $ref: "#/components/schemas/Currency"
+        ledgerBalance:
+          $ref: "#/components/schemas/DecimalAmount"
+        status:
+          type: string
+          enum: [PENDING, RECONCILED]
+        reportedBalance:
+          $ref: "#/components/schemas/DecimalAmount"
+        difference:
+          $ref: "#/components/schemas/DecimalAmount"
+        reconciliationId:
+          type: string
+          format: uuid
+        lastReconciledPeriodEnd:
+          type: string
+          format: date
+        gapMonths:
+          type: integer
+          minimum: 1
+        multiMonthGap:
+          type: boolean
+    PrepareReconciliationRequest:
+      type: object
+      additionalProperties: false
+      required: [accountId, periodEnd, reportedBalance, idempotencyKey]
+      properties:
+        accountId:
+          type: string
+          format: uuid
+        periodEnd:
+          type: string
+          format: date
+        reportedBalance:
+          $ref: "#/components/schemas/DecimalAmount"
+        idempotencyKey:
+          type: string
+          format: uuid
+    ReconciliationSubmissionResponse:
+      type: object
+      additionalProperties: false
+      required: [outcome]
+      properties:
+        outcome:
+          type: string
+          enum: [PREVIEW, APPLIED]
+        preview:
+          $ref: "#/components/schemas/ReconciliationPreview"
+        reconciliation:
+          $ref: "#/components/schemas/Reconciliation"
+    ReconciliationPreview:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - accountId
+        - accountName
+        - currency
+        - periodEnd
+        - reportedBalance
+        - ledgerBalance
+        - difference
+        - direction
+        - gapMonths
+        - multiMonthGap
+        - expiresAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        accountId:
+          type: string
+          format: uuid
+        accountName:
+          type: string
+        currency:
+          $ref: "#/components/schemas/Currency"
+        periodEnd:
+          type: string
+          format: date
+        reportedBalance:
+          $ref: "#/components/schemas/DecimalAmount"
+        ledgerBalance:
+          $ref: "#/components/schemas/DecimalAmount"
+        difference:
+          $ref: "#/components/schemas/DecimalAmount"
+        direction:
+          type: string
+          enum: [OTHER_INCOME, OTHER_EXPENSE, NONE]
+        gapMonths:
+          type: integer
+          minimum: 1
+        multiMonthGap:
+          type: boolean
+        expiresAt:
+          type: string
+          format: date-time
+    Reconciliation:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - accountId
+        - accountName
+        - currency
+        - periodEnd
+        - reportedBalance
+        - ledgerBalanceBefore
+        - difference
+        - adjustmentAmount
+        - gapMonths
+        - multiMonthGap
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        accountId:
+          type: string
+          format: uuid
+        accountName:
+          type: string
+        currency:
+          $ref: "#/components/schemas/Currency"
+        periodEnd:
+          type: string
+          format: date
+        reportedBalance:
+          $ref: "#/components/schemas/DecimalAmount"
+        ledgerBalanceBefore:
+          $ref: "#/components/schemas/DecimalAmount"
+        difference:
+          $ref: "#/components/schemas/DecimalAmount"
+        adjustmentAmount:
+          $ref: "#/components/schemas/DecimalAmount"
+        adjustmentTransactionId:
+          type: string
+          format: uuid
+        reversalTransactionId:
+          type: string
+          format: uuid
+        supersedesReconciliationId:
+          type: string
+          format: uuid
+        gapStartPeriodEnd:
+          type: string
+          format: date
+        gapMonths:
+          type: integer
+          minimum: 1
+        multiMonthGap:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+    AssetListResponse:
+      type: object
+      additionalProperties: false
+      required: [assets, totalCurrentOwnedValue, allocations]
+      properties:
+        assets:
+          type: array
+          items:
+            $ref: "#/components/schemas/Asset"
+        totalCurrentOwnedValue:
+          $ref: "#/components/schemas/DecimalAmount"
+        allocations:
+          type: array
+          items:
+            $ref: "#/components/schemas/AssetAllocation"
+    AssetAllocation:
+      type: object
+      additionalProperties: false
+      required: [type, currentOwnedValue]
+      properties:
+        type:
+          $ref: "#/components/schemas/AssetType"
+        currentOwnedValue:
+          $ref: "#/components/schemas/DecimalAmount"
+    Asset:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - name
+        - type
+        - currency
+        - ownershipShare
+        - ledgerAccountId
+        - ledgerAccountName
+        - ledgerBalance
+        - currentOwnedValue
+        - archived
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        type:
+          $ref: "#/components/schemas/AssetType"
+        currency:
+          $ref: "#/components/schemas/Currency"
+        ownershipShare:
+          $ref: "#/components/schemas/OwnershipShare"
+        country:
+          type: string
+        region:
+          type: string
+        institution:
+          type: string
+        notes:
+          type: string
+        ledgerAccountId:
+          type: string
+          format: uuid
+        ledgerAccountName:
+          type: string
+        ledgerBalance:
+          $ref: "#/components/schemas/DecimalAmount"
+        currentOwnedValue:
+          $ref: "#/components/schemas/DecimalAmount"
+        latestMarketValue:
+          $ref: "#/components/schemas/DecimalAmount"
+        latestValuationDate:
+          type: string
+          format: date
+        purchaseTransactionId:
+          type: string
+          format: uuid
+        archived:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+    CreateAssetPurchase:
+      type: object
+      additionalProperties: false
+      required: [sourceAccountId, amount, eventDate]
+      properties:
+        sourceAccountId:
+          type: string
+          format: uuid
+        amount:
+          $ref: "#/components/schemas/PositiveDecimalAmount"
+        eventDate:
+          type: string
+          format: date
+        description:
+          type: string
+          minLength: 1
+          maxLength: 500
+    CreateAssetRequest:
+      type: object
+      additionalProperties: false
+      required: [name, type, currency, ownershipShare, idempotencyKey]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        type:
+          $ref: "#/components/schemas/AssetType"
+        currency:
+          $ref: "#/components/schemas/Currency"
+        ownershipShare:
+          $ref: "#/components/schemas/OwnershipShare"
+        country:
+          type: string
+          minLength: 1
+          maxLength: 100
+        region:
+          type: string
+          minLength: 1
+          maxLength: 100
+        institution:
+          type: string
+          minLength: 1
+          maxLength: 150
+        notes:
+          type: string
+          minLength: 1
+          maxLength: 2000
+        ledgerAccountId:
+          type: string
+          format: uuid
+          description:
+            Optional existing private asset account. A dedicated account is created when omitted.
+        purchase:
+          $ref: "#/components/schemas/CreateAssetPurchase"
+        idempotencyKey:
+          type: string
+          format: uuid
+    UpdateAssetRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        country:
+          type: string
+          minLength: 1
+          maxLength: 100
+        region:
+          type: string
+          minLength: 1
+          maxLength: 100
+        institution:
+          type: string
+          minLength: 1
+          maxLength: 150
+        notes:
+          type: string
+          minLength: 1
+          maxLength: 2000
+        archived:
+          type: boolean
+    AssetValuationListResponse:
+      type: object
+      additionalProperties: false
+      required: [valuations]
+      properties:
+        valuations:
+          type: array
+          items:
+            $ref: "#/components/schemas/AssetValuation"
+    AssetValuation:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - assetId
+        - valuationDate
+        - marketValue
+        - ownedValue
+        - ledgerBalanceBefore
+        - adjustmentAmount
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        assetId:
+          type: string
+          format: uuid
+        valuationDate:
+          type: string
+          format: date
+        marketValue:
+          $ref: "#/components/schemas/DecimalAmount"
+        ownedValue:
+          $ref: "#/components/schemas/DecimalAmount"
+        ledgerBalanceBefore:
+          $ref: "#/components/schemas/DecimalAmount"
+        adjustmentAmount:
+          $ref: "#/components/schemas/DecimalAmount"
+        notes:
+          type: string
+        revaluationTransactionId:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+    CreateAssetValuationRequest:
+      type: object
+      additionalProperties: false
+      required: [valuationDate, marketValue, idempotencyKey]
+      properties:
+        valuationDate:
+          type: string
+          format: date
+        marketValue:
+          $ref: "#/components/schemas/DecimalAmount"
+        notes:
+          type: string
+          minLength: 1
+          maxLength: 1000
+        idempotencyKey:
+          type: string
+          format: uuid
+    AssetType:
+      type: string
+      enum: [REAL_ESTATE, VEHICLE, BUSINESS, SECURITIES, COLLECTIBLES, OTHER]
+    OwnershipShare:
+      type: string
+      pattern: "^(0|[1-9][0-9]?|100)(\\.[0-9]{1,2})?$"
+    RecurringOperationType:
+      type: string
+      enum: [INCOME, EXPENSE, TRANSFER, ASSET_PURCHASE]
+    RecurringFrequency:
+      type: string
+      enum: [WEEKLY, MONTHLY, QUARTERLY, YEARLY, CUSTOM]
+    RecurringIntervalUnit:
+      type: string
+      enum: [DAYS, WEEKS, MONTHS, YEARS]
+    RecurringTemplateStatus:
+      type: string
+      enum: [ACTIVE, PAUSED]
+    UserAccountClass:
+      type: string
+      enum: [ASSET, LIABILITY]
+    AccountSubtype:
+      type: string
+      enum: [bank, cash, brokerage, real_estate, vehicle, security, mortgage, loan, other]
+    CategoryDirection:
+      type: string
+      enum: [INCOME, EXPENSE]
+    TransactionType:
+      type: string
+      enum:
+        [
+          OPENING_BALANCE,
+          INCOME,
+          EXPENSE,
+          TRANSFER,
+          ASSET_PURCHASE,
+          RECONCILIATION,
+          REVALUATION,
+          REVERSAL,
+        ]
+    Password:
+      type: string
+      minLength: 12
+      maxLength: 128
+    DecimalAmount:
+      type: string
+      pattern: "^-?(0|[1-9][0-9]*)(\\.[0-9]{1,8})?$"
+    PositiveDecimalAmount:
+      type: string
+      pattern: "^(0|[1-9][0-9]*)(\\.[0-9]{1,8})?$"
+    ReconciliationMode:
+      type: string
+      enum: [AUTO, CONFIRM]
+    Currency:
+      type: string
+      enum:
+        - USD
+        - EUR
+        - JPY
+        - GBP
+        - CNY
+        - AUD
+        - CAD
+        - CHF
+        - HKD
+        - SGD
+        - SEK
+        - KRW
+        - NOK
+        - NZD
+        - INR
+        - MXN
+        - TWD
+        - ZAR
+        - BRL
+        - DKK
+        - UAH
+        - KZT
+        - RUB
+        - AED
