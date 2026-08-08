@@ -197,10 +197,19 @@ func TestIdentityOwnershipOnboardingAndDeletionIntegration(t *testing.T) {
 	response = suite.request(http.MethodPatch, "/api/v1/users/me/settings", map[string]string{
 		"timezone": "Europe/London", "functionalCurrency": "GBP", "displayCurrency": "EUR", "reconciliationMode": "AUTO",
 	})
+	if response.StatusCode != http.StatusConflict {
+		content, _ := io.ReadAll(response.Body)
+		_ = response.Body.Close()
+		t.Fatalf("change locked functional currency: expected 409, got %d: %s", response.StatusCode, content)
+	}
+	_ = response.Body.Close()
+	response = suite.request(http.MethodPatch, "/api/v1/users/me/settings", map[string]string{
+		"timezone": "Europe/London", "functionalCurrency": "KZT", "displayCurrency": "EUR", "reconciliationMode": "AUTO",
+	})
 	if response.StatusCode != http.StatusOK {
 		content, _ := io.ReadAll(response.Body)
 		_ = response.Body.Close()
-		t.Fatalf("update settings: expected 200, got %d: %s", response.StatusCode, content)
+		t.Fatalf("update unlocked settings: expected 200, got %d: %s", response.StatusCode, content)
 	}
 	updated := integrationBody[api.AuthResponse](t, response)
 	if updated.User.Timezone != "Europe/London" || updated.User.ReconciliationMode != api.AUTO {

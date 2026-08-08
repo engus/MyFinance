@@ -652,16 +652,6 @@ a {
   min-height: 190px;
 }
 
-.health-panel {
-  min-width: 260px;
-  display: grid;
-  gap: 10px;
-  padding: 16px;
-  border: 1px solid var(--color-line);
-  border-radius: 14px;
-  background: color-mix(in srgb, var(--color-surface) 88%, transparent);
-}
-
 .inline-state {
   display: flex;
   align-items: center;
@@ -1010,12 +1000,444 @@ a {
   border-color: color-mix(in srgb, var(--color-negative) 35%, var(--color-line));
 }
 
+.cashflow-page {
+  gap: 20px;
+}
+
+.cashflow-hero {
+  min-height: 190px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 28px;
+  padding: 30px;
+  border-radius: var(--radius-card);
+  color: white;
+  background:
+    radial-gradient(circle at 85% 20%, rgb(255 255 255 / 13%), transparent 28%),
+    linear-gradient(138deg, #111938, #27235f 62%, #4334c4);
+  box-shadow: var(--shadow-card);
+}
+
+.cashflow-hero .eyebrow,
+.cashflow-hero p {
+  color: rgb(255 255 255 / 68%);
+}
+
+.cashflow-hero h2 {
+  margin: 7px 0 10px;
+  font-size: clamp(36px, 5vw, 58px);
+  line-height: 0.96;
+  letter-spacing: -0.06em;
+}
+
+.cashflow-hero p {
+  max-width: 690px;
+  margin: 0;
+  line-height: 1.55;
+}
+
+.cashflow-hero .button-primary {
+  min-width: 160px;
+  min-height: 46px;
+  border-color: white;
+  color: var(--color-brand);
+  background: white;
+  box-shadow: 0 12px 28px rgb(0 0 0 / 18%);
+}
+
+.cashflow-account-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 12px;
+}
+
+.balance-chip {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 18px;
+  border: 1px solid var(--color-line);
+  border-radius: 15px;
+  background: var(--color-surface);
+  box-shadow: 0 6px 18px rgb(30 35 74 / 5%);
+}
+
+.balance-chip span,
+.balance-chip small {
+  display: block;
+}
+
+.balance-chip span {
+  font-size: 12px;
+  font-weight: 760;
+}
+
+.balance-chip small {
+  margin-top: 3px;
+  color: var(--color-muted);
+  font-size: 10px;
+  text-transform: capitalize;
+}
+
+.balance-chip strong {
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.segmented-tabs {
+  width: max-content;
+  max-width: 100%;
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--color-line);
+  border-radius: 13px;
+  background: var(--color-surface-soft);
+}
+
+.segmented-tabs button {
+  min-height: 38px;
+  padding: 8px 16px;
+  border: 0;
+  border-radius: 9px;
+  color: var(--color-muted);
+  background: transparent;
+  font-size: 12px;
+  font-weight: 760;
+  cursor: pointer;
+}
+
+.segmented-tabs button.active {
+  color: var(--color-brand);
+  background: var(--color-surface);
+  box-shadow: 0 3px 10px rgb(30 35 74 / 8%);
+}
+
+.filter-card {
+  padding: 17px 20px;
+}
+
+.filter-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 13px;
+  font-size: 12px;
+}
+
+.text-button {
+  padding: 0;
+  border: 0;
+  color: var(--color-brand);
+  background: transparent;
+  font-size: 11px;
+  font-weight: 760;
+  cursor: pointer;
+}
+
+.cashflow-filters {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(125px, 1fr));
+  gap: 12px;
+}
+
+.compact-field {
+  display: grid;
+  gap: 6px;
+}
+
+.compact-field span {
+  color: var(--color-muted);
+  font-size: 10px;
+  font-weight: 740;
+}
+
+.compact-field input,
+.compact-field select {
+  width: 100%;
+  min-width: 0;
+  height: 40px;
+  padding: 0 10px;
+  border: 1px solid var(--color-line);
+  border-radius: 9px;
+  color: var(--color-ink);
+  background: var(--color-surface);
+  font-size: 11px;
+}
+
+.transaction-card {
+  padding: 0;
+  overflow: hidden;
+}
+
+.transaction-list {
+  min-width: 760px;
+}
+
+.transaction-row {
+  min-height: 74px;
+  display: grid;
+  grid-template-columns: 100px minmax(220px, 1.4fr) minmax(170px, 1fr) 150px 180px;
+  align-items: center;
+  gap: 18px;
+  padding: 12px 20px;
+  border-bottom: 1px solid var(--color-line);
+  font-size: 12px;
+}
+
+.transaction-head {
+  min-height: 46px;
+  color: var(--color-muted);
+  background: var(--color-surface-soft);
+  font-size: 10px;
+  font-weight: 760;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.transaction-muted {
+  color: var(--color-muted);
+  background: color-mix(in srgb, var(--color-surface-soft) 55%, white);
+}
+
+.transaction-row time,
+.transaction-row > strong {
+  font-variant-numeric: tabular-nums;
+}
+
+.operation-cell {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.operation-cell strong,
+.operation-cell small,
+.account-cell strong,
+.account-cell small {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.operation-cell small,
+.account-cell small {
+  margin-top: 4px;
+  color: var(--color-muted);
+  font-size: 10px;
+}
+
+.operation-icon {
+  width: 36px;
+  height: 36px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+  color: var(--color-brand);
+  background: var(--color-brand-soft);
+  font-weight: 800;
+}
+
+.operation-income {
+  color: var(--color-positive);
+  background: var(--color-positive-soft);
+}
+
+.operation-expense,
+.operation-asset_purchase {
+  color: var(--color-negative);
+  background: var(--color-negative-soft);
+}
+
+.amount-positive {
+  color: var(--color-positive);
+}
+
+.amount-negative {
+  color: var(--color-negative);
+}
+
+.row-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 7px;
+}
+
+.row-actions .button {
+  min-height: 32px;
+  padding: 6px 9px;
+  font-size: 10px;
+}
+
+.load-more {
+  display: block;
+  margin: 18px auto;
+}
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  padding: 22px;
+  background: rgb(10 14 38 / 52%);
+  backdrop-filter: blur(5px);
+}
+
+.ledger-dialog {
+  width: min(100%, 650px);
+  max-height: min(90vh, 820px);
+  overflow: auto;
+  border: 1px solid var(--color-line);
+  border-radius: 22px;
+  background: var(--color-surface);
+  box-shadow: 0 28px 80px rgb(10 14 38 / 32%);
+}
+
+.ledger-dialog > header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 24px 26px 18px;
+  border-bottom: 1px solid var(--color-line);
+}
+
+.ledger-dialog h2 {
+  margin: 6px 0 0;
+  font-size: 25px;
+  letter-spacing: -0.04em;
+}
+
+.dialog-close {
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--color-line);
+  border-radius: 10px;
+  color: var(--color-muted);
+  background: var(--color-surface);
+  font-size: 22px;
+  cursor: pointer;
+}
+
+.ledger-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 17px;
+  padding: 24px 26px 26px;
+}
+
+.full-field {
+  grid-column: 1 / -1;
+}
+
+.dialog-note {
+  margin: 0;
+  padding: 12px 14px;
+  border-radius: 10px;
+  color: var(--color-muted);
+  background: var(--color-surface-soft);
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 7px;
+}
+
+.management-stack {
+  display: grid;
+  gap: 14px;
+}
+
+.archive-toggle {
+  width: max-content;
+  margin-left: auto;
+}
+
+.management-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  align-items: start;
+}
+
+.management-list {
+  display: grid;
+  max-height: 350px;
+  overflow: auto;
+}
+
+.management-row {
+  min-height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  padding: 11px 0;
+  border-bottom: 1px solid var(--color-line);
+}
+
+.management-row strong,
+.management-row small {
+  display: block;
+}
+
+.management-row strong {
+  font-size: 12px;
+}
+
+.management-row small {
+  margin-top: 4px;
+  color: var(--color-muted);
+  font-size: 10px;
+  text-transform: capitalize;
+}
+
+.manager-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px solid var(--color-line);
+}
+
+.manager-form h3 {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: 14px;
+}
+
+.manager-form .button-primary {
+  align-self: end;
+}
+
 @media (max-width: 1050px) {
   .metric-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .settings-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .cashflow-filters {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .management-grid {
     grid-template-columns: 1fr;
   }
 }
@@ -1098,6 +1520,94 @@ a {
     font-size: 17px;
   }
 
+  .cashflow-hero {
+    min-height: 250px;
+    align-items: flex-start;
+    flex-direction: column;
+    padding: 24px;
+  }
+
+  .cashflow-hero .button-primary {
+    width: 100%;
+  }
+
+  .cashflow-account-strip {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+  }
+
+  .balance-chip {
+    min-width: 235px;
+    scroll-snap-align: start;
+  }
+
+  .cashflow-filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .transaction-card {
+    overflow: hidden;
+  }
+
+  .transaction-list {
+    min-width: 0;
+  }
+
+  .transaction-head {
+    display: none;
+  }
+
+  .transaction-row:not(.transaction-head) {
+    min-height: 0;
+    grid-template-columns: 88px minmax(0, 1fr);
+    gap: 10px 14px;
+    padding: 17px 18px;
+  }
+
+  .transaction-row time {
+    grid-column: 1;
+    grid-row: 1;
+    color: var(--color-muted);
+    font-size: 10px;
+  }
+
+  .transaction-row .operation-cell {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .transaction-row .account-cell,
+  .transaction-row > strong,
+  .transaction-row .row-actions {
+    grid-column: 2;
+  }
+
+  .transaction-row .row-actions {
+    justify-content: flex-start;
+  }
+
+  .modal-backdrop {
+    align-items: end;
+    padding: 0;
+  }
+
+  .ledger-dialog {
+    width: 100%;
+    max-height: 92vh;
+    border-radius: 22px 22px 0 0;
+  }
+
+  .ledger-form,
+  .manager-form {
+    grid-template-columns: 1fr;
+  }
+
+  .ledger-form > *,
+  .manager-form > * {
+    grid-column: 1;
+  }
+
   .topbar {
     height: auto;
     padding: 14px 16px;
@@ -1125,10 +1635,6 @@ a {
     display: grid;
     align-items: start;
     padding: 22px;
-  }
-
-  .health-panel {
-    min-width: 0;
   }
 
   .dashboard-grid {

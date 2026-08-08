@@ -25,6 +25,61 @@ type AuthAuditEvent struct {
 	CreatedAt pgtype.Timestamptz `json:"created_at"`
 }
 
+type Category struct {
+	ID              pgtype.UUID        `json:"id"`
+	UserID          pgtype.UUID        `json:"user_id"`
+	Name            string             `json:"name"`
+	Direction       string             `json:"direction"`
+	LedgerAccountID pgtype.UUID        `json:"ledger_account_id"`
+	ArchivedAt      pgtype.Timestamptz `json:"archived_at"`
+	CreatedAt       pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
+}
+
+type LedgerAccount struct {
+	ID           pgtype.UUID        `json:"id"`
+	UserID       pgtype.UUID        `json:"user_id"`
+	Name         string             `json:"name"`
+	AccountClass string             `json:"account_class"`
+	Subtype      string             `json:"subtype"`
+	Role         string             `json:"role"`
+	Currency     string             `json:"currency"`
+	SystemCode   pgtype.Text        `json:"system_code"`
+	ArchivedAt   pgtype.Timestamptz `json:"archived_at"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt    pgtype.Timestamptz `json:"updated_at"`
+}
+
+// Signed exact-decimal entries carrying original and functional amounts plus the immutable FX snapshot.
+type LedgerEntry struct {
+	ID               pgtype.UUID        `json:"id"`
+	TransactionID    pgtype.UUID        `json:"transaction_id"`
+	UserID           pgtype.UUID        `json:"user_id"`
+	AccountID        pgtype.UUID        `json:"account_id"`
+	CategoryID       pgtype.UUID        `json:"category_id"`
+	OriginalAmount   pgtype.Numeric     `json:"original_amount"`
+	Currency         string             `json:"currency"`
+	FunctionalAmount pgtype.Numeric     `json:"functional_amount"`
+	FxRate           pgtype.Numeric     `json:"fx_rate"`
+	FxSource         string             `json:"fx_source"`
+	FxDate           pgtype.Date        `json:"fx_date"`
+	CreatedAt        pgtype.Timestamptz `json:"created_at"`
+}
+
+// Immutable posted journal. Corrections are represented by reversal and replacement transactions.
+type LedgerTransaction struct {
+	ID                    pgtype.UUID        `json:"id"`
+	UserID                pgtype.UUID        `json:"user_id"`
+	TransactionType       string             `json:"transaction_type"`
+	EventDate             pgtype.Date        `json:"event_date"`
+	Description           pgtype.Text        `json:"description"`
+	IdempotencyKey        pgtype.UUID        `json:"idempotency_key"`
+	ReversesTransactionID pgtype.UUID        `json:"reverses_transaction_id"`
+	ReplacesTransactionID pgtype.UUID        `json:"replaces_transaction_id"`
+	PostedAt              pgtype.Timestamptz `json:"posted_at"`
+	CreatedAt             pgtype.Timestamptz `json:"created_at"`
+}
+
 type LoginChallenge struct {
 	ID         pgtype.UUID        `json:"id"`
 	UserID     pgtype.UUID        `json:"user_id"`
@@ -48,6 +103,7 @@ type OnboardingAccountSetup struct {
 	LedgerPostedAt     pgtype.Timestamptz `json:"ledger_posted_at"`
 	CreatedAt          pgtype.Timestamptz `json:"created_at"`
 	UpdatedAt          pgtype.Timestamptz `json:"updated_at"`
+	LedgerAccountID    pgtype.UUID        `json:"ledger_account_id"`
 }
 
 // Optional monthly income setup awaiting recurring-template materialization in Milestone 3.

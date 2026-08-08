@@ -18,8 +18,8 @@ reviewed pull request per milestone.
 | ------------------------------------- | ---------------------------------- | --------------------------------------- |
 | 0 — Specification and design          | `codex/rebuild-00-spec-design`     | Complete                                |
 | 1 — Local platform foundation         | `codex/rebuild-01-foundation`      | Complete                                |
-| 2 — Identity, security, onboarding    | `codex/rebuild-02-identity`        | Acceptance passed; PR #4 review pending |
-| 3 — Ledger and Cashflow               | `codex/rebuild-03-ledger-cashflow` | Queued                                  |
+| 2 — Identity, security, onboarding    | `codex/rebuild-02-identity`        | Complete; PR #4 merged                  |
+| 3 — Ledger and Cashflow               | `codex/rebuild-03-ledger-cashflow` | Acceptance passed; PR #5 review pending |
 | 4 — Recurring and Reconciliation      | `codex/rebuild-04-reconciliation`  | Queued                                  |
 | 5 — Assets and valuations             | `codex/rebuild-05-assets`          | Queued                                  |
 | 6 — FX worker and Dashboard           | `codex/rebuild-06-fx-dashboard`    | Queued                                  |

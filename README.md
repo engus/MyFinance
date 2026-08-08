@@ -4,9 +4,9 @@ MyFinance is a privacy-conscious personal finance web application for understand
 worth without recording every purchase. The application is being rebuilt milestone by milestone from
 the specification in [`promt.md`](promt.md) and the delivery plan in [`plan.md`](plan.md).
 
-This branch contains the complete Identity milestone on top of the local platform foundation:
-registration, password and optional TOTP login, secure database sessions, onboarding, personal
-settings, and the approved Calm Ledger interface.
+This branch contains the immutable ledger and Cashflow milestone on top of identity and onboarding:
+typed financial operations, exact-decimal balances, reversal-based corrections, account/category
+management, filtered history, and the approved Calm Ledger interface.
 
 ## Start locally
 
@@ -37,9 +37,9 @@ These credentials are intentionally development-only. The database contains an A
 hash rather than the plaintext password. Browser sessions are stored in PostgreSQL as token hashes
 and delivered through an HttpOnly, SameSite cookie.
 
-The idempotent seed also creates setup data for the demo user: a `Primary checking` account with a
-`12,450.75 USD` balance dated `2026-08-01` and a `4,800.00 USD` monthly salary expected on day 25.
-These setup records will become immutable ledger operations in Milestone 3.
+The idempotent seed creates two accounts plus posted demo operations for a `12,450.75 USD` opening
+balance, salary, rent, groceries, and a savings transfer. Re-running the seed creates no duplicate
+transactions.
 
 | Service         | Local address                               |
 | --------------- | ------------------------------------------- |
@@ -98,11 +98,11 @@ pages_preview/     Approved and historical visual references
 
 ## Current milestone boundary
 
-Milestone 2 implements registration, normalized email/password login, optional TOTP with encrypted
-secrets, one-use hashed recovery codes, session review/revocation, profile/password/settings
-changes, password-confirmed account deletion, and onboarding for timezone, currencies,
-reconciliation mode, the first account/opening balance, and optional recurring income.
+Milestone 3 implements immutable balanced transactions, accounts and categories, typed opening
+balance/income/expense/transfer/asset-purchase operations, cursor-filtered Cashflow history, and
+reversal-based correction. Onboarding now posts its opening transaction atomically.
 
-Opening-balance and recurring-income setup data is intentionally not posted into an ad-hoc ledger.
-Milestone 3 will materialize it through the same immutable, balanced operations used by Cashflow.
-Durable multi-instance rate limiting and all financial records remain outside this milestone.
+Recurring generation and reconciliation are next. Different-currency transactions remain explicit
+`fx_rate_unavailable` conflicts until the dated FX cache is connected; no rate is guessed. Manual
+asset valuation snapshots arrive later, while automatic security quotes and liabilities remain out
+of v1.

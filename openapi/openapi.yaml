@@ -363,7 +363,303 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         "409":
           $ref: "#/components/responses/Conflict"
+  /api/v1/accounts:
+    get:
+      operationId: listAccounts
+      summary: List owned user accounts with exact ledger balances
+      tags: [Cashflow]
+      parameters:
+        - name: includeArchived
+          in: query
+          schema:
+            type: boolean
+            default: false
+      responses:
+        "200":
+          description: Owned accounts
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccountListResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      operationId: createAccount
+      summary: Create an account and optionally post its opening balance atomically
+      tags: [Cashflow]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateAccountRequest"
+      responses:
+        "201":
+          description: Account created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Account"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /api/v1/accounts/{accountId}:
+    patch:
+      operationId: updateAccount
+      summary: Rename, archive, restore, or change an unused account currency
+      tags: [Cashflow]
+      parameters:
+        - $ref: "#/components/parameters/AccountId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateAccountRequest"
+      responses:
+        "200":
+          description: Account updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Account"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /api/v1/categories:
+    get:
+      operationId: listCategories
+      summary: List owned income and expense categories
+      tags: [Cashflow]
+      parameters:
+        - name: includeArchived
+          in: query
+          schema:
+            type: boolean
+            default: false
+      responses:
+        "200":
+          description: Owned categories
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CategoryListResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      operationId: createCategory
+      summary: Create a category and its private ledger account atomically
+      tags: [Cashflow]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCategoryRequest"
+      responses:
+        "201":
+          description: Category created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Category"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /api/v1/categories/{categoryId}:
+    patch:
+      operationId: updateCategory
+      summary: Rename, archive, or restore an owned category
+      tags: [Cashflow]
+      parameters:
+        - $ref: "#/components/parameters/CategoryId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateCategoryRequest"
+      responses:
+        "200":
+          description: Category updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Category"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /api/v1/transactions:
+    get:
+      operationId: listTransactions
+      summary: List immutable operations using stable cursor pagination
+      tags: [Cashflow]
+      parameters:
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: accountId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: categoryId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: type
+          in: query
+          schema:
+            $ref: "#/components/schemas/TransactionType"
+        - name: cursor
+          in: query
+          schema:
+            type: string
+            maxLength: 200
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 25
+      responses:
+        "200":
+          description: Immutable operation page
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TransactionListResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      operationId: createTransaction
+      summary: Post one typed financial operation as a balanced transaction
+      tags: [Cashflow]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTransactionRequest"
+      responses:
+        "201":
+          description: Operation posted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Transaction"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /api/v1/transactions/{transactionId}/reversal:
+    post:
+      operationId: reverseTransaction
+      summary: Preserve and reverse an owned posted transaction
+      tags: [Cashflow]
+      parameters:
+        - $ref: "#/components/parameters/TransactionId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReversalRequest"
+      responses:
+        "201":
+          description: Reversal posted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Transaction"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /api/v1/transactions/{transactionId}/replacement:
+    post:
+      operationId: replaceTransaction
+      summary: Atomically reverse an operation and post its corrected replacement
+      tags: [Cashflow]
+      parameters:
+        - $ref: "#/components/parameters/TransactionId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReplacementRequest"
+      responses:
+        "201":
+          description: Original reversed and corrected operation posted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReplacementResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
 components:
+  parameters:
+    AccountId:
+      name: accountId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    CategoryId:
+      name: categoryId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    TransactionId:
+      name: transactionId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
   responses:
     BadRequest:
       description: Request validation failed
@@ -747,6 +1043,253 @@ components:
         recurringIncomeSetupId:
           type: string
           format: uuid
+    AccountListResponse:
+      type: object
+      additionalProperties: false
+      required: [accounts]
+      properties:
+        accounts:
+          type: array
+          items:
+            $ref: "#/components/schemas/Account"
+    Account:
+      type: object
+      additionalProperties: false
+      required: [id, name, accountClass, subtype, currency, balance, archived, hasPostings]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        accountClass:
+          $ref: "#/components/schemas/UserAccountClass"
+        subtype:
+          $ref: "#/components/schemas/AccountSubtype"
+        currency:
+          $ref: "#/components/schemas/Currency"
+        balance:
+          $ref: "#/components/schemas/DecimalAmount"
+        archived:
+          type: boolean
+        hasPostings:
+          type: boolean
+    CreateAccountRequest:
+      type: object
+      additionalProperties: false
+      required: [name, accountClass, subtype, currency]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        accountClass:
+          $ref: "#/components/schemas/UserAccountClass"
+        subtype:
+          $ref: "#/components/schemas/AccountSubtype"
+        currency:
+          $ref: "#/components/schemas/Currency"
+        openingBalance:
+          $ref: "#/components/schemas/DecimalAmount"
+        openingBalanceDate:
+          type: string
+          format: date
+        idempotencyKey:
+          type: string
+          format: uuid
+    UpdateAccountRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        currency:
+          $ref: "#/components/schemas/Currency"
+        archived:
+          type: boolean
+    CategoryListResponse:
+      type: object
+      additionalProperties: false
+      required: [categories]
+      properties:
+        categories:
+          type: array
+          items:
+            $ref: "#/components/schemas/Category"
+    Category:
+      type: object
+      additionalProperties: false
+      required: [id, name, direction, archived]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        direction:
+          $ref: "#/components/schemas/CategoryDirection"
+        archived:
+          type: boolean
+    CreateCategoryRequest:
+      type: object
+      additionalProperties: false
+      required: [name, direction]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        direction:
+          $ref: "#/components/schemas/CategoryDirection"
+    UpdateCategoryRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        archived:
+          type: boolean
+    CreateTransactionRequest:
+      type: object
+      additionalProperties: false
+      description: Typed operation contract. Raw journal entries are never accepted from clients.
+      required: [type, eventDate, amount, idempotencyKey]
+      properties:
+        type:
+          type: string
+          enum: [OPENING_BALANCE, INCOME, EXPENSE, TRANSFER, ASSET_PURCHASE]
+        eventDate:
+          type: string
+          format: date
+        amount:
+          $ref: "#/components/schemas/PositiveDecimalAmount"
+        idempotencyKey:
+          type: string
+          format: uuid
+        description:
+          type: string
+          minLength: 1
+          maxLength: 500
+        accountId:
+          type: string
+          format: uuid
+          description: Required for opening balance, income, and expense.
+        categoryId:
+          type: string
+          format: uuid
+          description: Required for income and expense.
+        sourceAccountId:
+          type: string
+          format: uuid
+          description: Required for transfer and asset purchase.
+        destinationAccountId:
+          type: string
+          format: uuid
+          description: Required for transfer and asset purchase.
+    TransactionListResponse:
+      type: object
+      additionalProperties: false
+      required: [transactions]
+      properties:
+        transactions:
+          type: array
+          items:
+            $ref: "#/components/schemas/Transaction"
+        nextCursor:
+          type: string
+    Transaction:
+      type: object
+      additionalProperties: false
+      required: [id, type, eventDate, amount, currency, primaryAccountName, status, postedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          $ref: "#/components/schemas/TransactionType"
+        eventDate:
+          type: string
+          format: date
+        description:
+          type: string
+        amount:
+          $ref: "#/components/schemas/PositiveDecimalAmount"
+        currency:
+          $ref: "#/components/schemas/Currency"
+        primaryAccountName:
+          type: string
+        primaryAccountId:
+          type: string
+          format: uuid
+        counterpartyName:
+          type: string
+        counterpartyAccountId:
+          type: string
+          format: uuid
+        categoryName:
+          type: string
+        categoryId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [POSTED, REVERSED, REVERSAL, REPLACED]
+        reversesTransactionId:
+          type: string
+          format: uuid
+        replacesTransactionId:
+          type: string
+          format: uuid
+        postedAt:
+          type: string
+          format: date-time
+    ReversalRequest:
+      type: object
+      additionalProperties: false
+      required: [idempotencyKey]
+      properties:
+        idempotencyKey:
+          type: string
+          format: uuid
+        description:
+          type: string
+          minLength: 1
+          maxLength: 500
+    ReplacementRequest:
+      type: object
+      additionalProperties: false
+      required: [reversalIdempotencyKey, operation]
+      properties:
+        reversalIdempotencyKey:
+          type: string
+          format: uuid
+        operation:
+          $ref: "#/components/schemas/CreateTransactionRequest"
+    ReplacementResponse:
+      type: object
+      additionalProperties: false
+      required: [reversal, replacement]
+      properties:
+        reversal:
+          $ref: "#/components/schemas/Transaction"
+        replacement:
+          $ref: "#/components/schemas/Transaction"
+    UserAccountClass:
+      type: string
+      enum: [ASSET, LIABILITY]
+    AccountSubtype:
+      type: string
+      enum: [bank, cash, brokerage, real_estate, vehicle, security, mortgage, loan, other]
+    CategoryDirection:
+      type: string
+      enum: [INCOME, EXPENSE]
+    TransactionType:
+      type: string
+      enum: [OPENING_BALANCE, INCOME, EXPENSE, TRANSFER, ASSET_PURCHASE, REVERSAL]
     Password:
       type: string
       minLength: 12

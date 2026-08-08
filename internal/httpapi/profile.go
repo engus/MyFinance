@@ -198,6 +198,19 @@ func (server *Server) UpdateUserSettings(writer http.ResponseWriter, request *ht
 	}
 	defer func() { _ = tx.Rollback(request.Context()) }()
 	queries := database.New(tx)
+	var currentFunctionalCurrency string
+	var hasPostings bool
+	if err := tx.QueryRow(request.Context(), `
+		SELECT functional_currency::text,
+		       EXISTS (SELECT 1 FROM ledger_transactions WHERE user_id = users.id AND posted_at IS NOT NULL)
+		FROM users WHERE id = $1 FOR UPDATE`, authenticated.userID).Scan(&currentFunctionalCurrency, &hasPostings); err != nil {
+		writeError(writer, http.StatusInternalServerError, "internal_error", "An internal error occurred.")
+		return
+	}
+	if hasPostings && string(payload.FunctionalCurrency) != currentFunctionalCurrency {
+		writeError(writer, http.StatusConflict, "functional_currency_locked", "Functional currency is locked after the first ledger posting.")
+		return
+	}
 	updated, err := queries.UpdateUserSettings(request.Context(), database.UpdateUserSettingsParams{
 		Timezone:           payload.Timezone,
 		FunctionalCurrency: string(payload.FunctionalCurrency),

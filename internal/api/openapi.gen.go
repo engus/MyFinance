@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"compress/flate"
 	"encoding/base64"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -19,6 +20,90 @@ import (
 	"github.com/oapi-codegen/runtime"
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
+
+// Defines values for AccountSubtype.
+const (
+	AccountSubtypeBank       AccountSubtype = "bank"
+	AccountSubtypeBrokerage  AccountSubtype = "brokerage"
+	AccountSubtypeCash       AccountSubtype = "cash"
+	AccountSubtypeLoan       AccountSubtype = "loan"
+	AccountSubtypeMortgage   AccountSubtype = "mortgage"
+	AccountSubtypeOther      AccountSubtype = "other"
+	AccountSubtypeRealEstate AccountSubtype = "real_estate"
+	AccountSubtypeSecurity   AccountSubtype = "security"
+	AccountSubtypeVehicle    AccountSubtype = "vehicle"
+)
+
+// Valid indicates whether the value is a known member of the AccountSubtype enum.
+func (e AccountSubtype) Valid() bool {
+	switch e {
+	case AccountSubtypeBank:
+		return true
+	case AccountSubtypeBrokerage:
+		return true
+	case AccountSubtypeCash:
+		return true
+	case AccountSubtypeLoan:
+		return true
+	case AccountSubtypeMortgage:
+		return true
+	case AccountSubtypeOther:
+		return true
+	case AccountSubtypeRealEstate:
+		return true
+	case AccountSubtypeSecurity:
+		return true
+	case AccountSubtypeVehicle:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CategoryDirection.
+const (
+	CategoryDirectionEXPENSE CategoryDirection = "EXPENSE"
+	CategoryDirectionINCOME  CategoryDirection = "INCOME"
+)
+
+// Valid indicates whether the value is a known member of the CategoryDirection enum.
+func (e CategoryDirection) Valid() bool {
+	switch e {
+	case CategoryDirectionEXPENSE:
+		return true
+	case CategoryDirectionINCOME:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CreateTransactionRequestType.
+const (
+	CreateTransactionRequestTypeASSETPURCHASE  CreateTransactionRequestType = "ASSET_PURCHASE"
+	CreateTransactionRequestTypeEXPENSE        CreateTransactionRequestType = "EXPENSE"
+	CreateTransactionRequestTypeINCOME         CreateTransactionRequestType = "INCOME"
+	CreateTransactionRequestTypeOPENINGBALANCE CreateTransactionRequestType = "OPENING_BALANCE"
+	CreateTransactionRequestTypeTRANSFER       CreateTransactionRequestType = "TRANSFER"
+)
+
+// Valid indicates whether the value is a known member of the CreateTransactionRequestType enum.
+func (e CreateTransactionRequestType) Valid() bool {
+	switch e {
+	case CreateTransactionRequestTypeASSETPURCHASE:
+		return true
+	case CreateTransactionRequestTypeEXPENSE:
+		return true
+	case CreateTransactionRequestTypeINCOME:
+		return true
+	case CreateTransactionRequestTypeOPENINGBALANCE:
+		return true
+	case CreateTransactionRequestTypeTRANSFER:
+		return true
+	default:
+		return false
+	}
+}
 
 // Defines values for Currency.
 const (
@@ -136,16 +221,16 @@ func (e LoginChallengeResponseStatus) Valid() bool {
 
 // Defines values for OnboardingAccountAccountClass.
 const (
-	ASSET     OnboardingAccountAccountClass = "ASSET"
-	LIABILITY OnboardingAccountAccountClass = "LIABILITY"
+	OnboardingAccountAccountClassASSET     OnboardingAccountAccountClass = "ASSET"
+	OnboardingAccountAccountClassLIABILITY OnboardingAccountAccountClass = "LIABILITY"
 )
 
 // Valid indicates whether the value is a known member of the OnboardingAccountAccountClass enum.
 func (e OnboardingAccountAccountClass) Valid() bool {
 	switch e {
-	case ASSET:
+	case OnboardingAccountAccountClassASSET:
 		return true
-	case LIABILITY:
+	case OnboardingAccountAccountClassLIABILITY:
 		return true
 	default:
 		return false
@@ -154,37 +239,37 @@ func (e OnboardingAccountAccountClass) Valid() bool {
 
 // Defines values for OnboardingAccountSubtype.
 const (
-	Bank       OnboardingAccountSubtype = "bank"
-	Brokerage  OnboardingAccountSubtype = "brokerage"
-	Cash       OnboardingAccountSubtype = "cash"
-	Loan       OnboardingAccountSubtype = "loan"
-	Mortgage   OnboardingAccountSubtype = "mortgage"
-	Other      OnboardingAccountSubtype = "other"
-	RealEstate OnboardingAccountSubtype = "real_estate"
-	Security   OnboardingAccountSubtype = "security"
-	Vehicle    OnboardingAccountSubtype = "vehicle"
+	OnboardingAccountSubtypeBank       OnboardingAccountSubtype = "bank"
+	OnboardingAccountSubtypeBrokerage  OnboardingAccountSubtype = "brokerage"
+	OnboardingAccountSubtypeCash       OnboardingAccountSubtype = "cash"
+	OnboardingAccountSubtypeLoan       OnboardingAccountSubtype = "loan"
+	OnboardingAccountSubtypeMortgage   OnboardingAccountSubtype = "mortgage"
+	OnboardingAccountSubtypeOther      OnboardingAccountSubtype = "other"
+	OnboardingAccountSubtypeRealEstate OnboardingAccountSubtype = "real_estate"
+	OnboardingAccountSubtypeSecurity   OnboardingAccountSubtype = "security"
+	OnboardingAccountSubtypeVehicle    OnboardingAccountSubtype = "vehicle"
 )
 
 // Valid indicates whether the value is a known member of the OnboardingAccountSubtype enum.
 func (e OnboardingAccountSubtype) Valid() bool {
 	switch e {
-	case Bank:
+	case OnboardingAccountSubtypeBank:
 		return true
-	case Brokerage:
+	case OnboardingAccountSubtypeBrokerage:
 		return true
-	case Cash:
+	case OnboardingAccountSubtypeCash:
 		return true
-	case Loan:
+	case OnboardingAccountSubtypeLoan:
 		return true
-	case Mortgage:
+	case OnboardingAccountSubtypeMortgage:
 		return true
-	case Other:
+	case OnboardingAccountSubtypeOther:
 		return true
-	case RealEstate:
+	case OnboardingAccountSubtypeRealEstate:
 		return true
-	case Security:
+	case OnboardingAccountSubtypeSecurity:
 		return true
-	case Vehicle:
+	case OnboardingAccountSubtypeVehicle:
 		return true
 	default:
 		return false
@@ -209,9 +294,117 @@ func (e ReconciliationMode) Valid() bool {
 	}
 }
 
+// Defines values for TransactionStatus.
+const (
+	TransactionStatusPOSTED   TransactionStatus = "POSTED"
+	TransactionStatusREPLACED TransactionStatus = "REPLACED"
+	TransactionStatusREVERSAL TransactionStatus = "REVERSAL"
+	TransactionStatusREVERSED TransactionStatus = "REVERSED"
+)
+
+// Valid indicates whether the value is a known member of the TransactionStatus enum.
+func (e TransactionStatus) Valid() bool {
+	switch e {
+	case TransactionStatusPOSTED:
+		return true
+	case TransactionStatusREPLACED:
+		return true
+	case TransactionStatusREVERSAL:
+		return true
+	case TransactionStatusREVERSED:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for TransactionType.
+const (
+	TransactionTypeASSETPURCHASE  TransactionType = "ASSET_PURCHASE"
+	TransactionTypeEXPENSE        TransactionType = "EXPENSE"
+	TransactionTypeINCOME         TransactionType = "INCOME"
+	TransactionTypeOPENINGBALANCE TransactionType = "OPENING_BALANCE"
+	TransactionTypeREVERSAL       TransactionType = "REVERSAL"
+	TransactionTypeTRANSFER       TransactionType = "TRANSFER"
+)
+
+// Valid indicates whether the value is a known member of the TransactionType enum.
+func (e TransactionType) Valid() bool {
+	switch e {
+	case TransactionTypeASSETPURCHASE:
+		return true
+	case TransactionTypeEXPENSE:
+		return true
+	case TransactionTypeINCOME:
+		return true
+	case TransactionTypeOPENINGBALANCE:
+		return true
+	case TransactionTypeREVERSAL:
+		return true
+	case TransactionTypeTRANSFER:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for UserAccountClass.
+const (
+	UserAccountClassASSET     UserAccountClass = "ASSET"
+	UserAccountClassLIABILITY UserAccountClass = "LIABILITY"
+)
+
+// Valid indicates whether the value is a known member of the UserAccountClass enum.
+func (e UserAccountClass) Valid() bool {
+	switch e {
+	case UserAccountClassASSET:
+		return true
+	case UserAccountClassLIABILITY:
+		return true
+	default:
+		return false
+	}
+}
+
+// Account defines model for Account.
+type Account struct {
+	AccountClass UserAccountClass   `json:"accountClass"`
+	Archived     bool               `json:"archived"`
+	Balance      DecimalAmount      `json:"balance"`
+	Currency     Currency           `json:"currency"`
+	HasPostings  bool               `json:"hasPostings"`
+	Id           openapi_types.UUID `json:"id"`
+	Name         string             `json:"name"`
+	Subtype      AccountSubtype     `json:"subtype"`
+}
+
+// AccountListResponse defines model for AccountListResponse.
+type AccountListResponse struct {
+	Accounts []Account `json:"accounts"`
+}
+
+// AccountSubtype defines model for AccountSubtype.
+type AccountSubtype string
+
 // AuthResponse defines model for AuthResponse.
 type AuthResponse struct {
 	User User `json:"user"`
+}
+
+// Category defines model for Category.
+type Category struct {
+	Archived  bool               `json:"archived"`
+	Direction CategoryDirection  `json:"direction"`
+	Id        openapi_types.UUID `json:"id"`
+	Name      string             `json:"name"`
+}
+
+// CategoryDirection defines model for CategoryDirection.
+type CategoryDirection string
+
+// CategoryListResponse defines model for CategoryListResponse.
+type CategoryListResponse struct {
+	Categories []Category `json:"categories"`
 }
 
 // ChangePasswordRequest defines model for ChangePasswordRequest.
@@ -236,6 +429,46 @@ type CompleteOnboardingResponse struct {
 	RecurringIncomeSetupId *openapi_types.UUID `json:"recurringIncomeSetupId,omitempty"`
 	User                   User                `json:"user"`
 }
+
+// CreateAccountRequest defines model for CreateAccountRequest.
+type CreateAccountRequest struct {
+	AccountClass       UserAccountClass    `json:"accountClass"`
+	Currency           Currency            `json:"currency"`
+	IdempotencyKey     *openapi_types.UUID `json:"idempotencyKey,omitempty"`
+	Name               string              `json:"name"`
+	OpeningBalance     *DecimalAmount      `json:"openingBalance,omitempty"`
+	OpeningBalanceDate *openapi_types.Date `json:"openingBalanceDate,omitempty"`
+	Subtype            AccountSubtype      `json:"subtype"`
+}
+
+// CreateCategoryRequest defines model for CreateCategoryRequest.
+type CreateCategoryRequest struct {
+	Direction CategoryDirection `json:"direction"`
+	Name      string            `json:"name"`
+}
+
+// CreateTransactionRequest Typed operation contract. Raw journal entries are never accepted from clients.
+type CreateTransactionRequest struct {
+	// AccountId Required for opening balance, income, and expense.
+	AccountId *openapi_types.UUID   `json:"accountId,omitempty"`
+	Amount    PositiveDecimalAmount `json:"amount"`
+
+	// CategoryId Required for income and expense.
+	CategoryId  *openapi_types.UUID `json:"categoryId,omitempty"`
+	Description *string             `json:"description,omitempty"`
+
+	// DestinationAccountId Required for transfer and asset purchase.
+	DestinationAccountId *openapi_types.UUID `json:"destinationAccountId,omitempty"`
+	EventDate            openapi_types.Date  `json:"eventDate"`
+	IdempotencyKey       openapi_types.UUID  `json:"idempotencyKey"`
+
+	// SourceAccountId Required for transfer and asset purchase.
+	SourceAccountId *openapi_types.UUID          `json:"sourceAccountId,omitempty"`
+	Type            CreateTransactionRequestType `json:"type"`
+}
+
+// CreateTransactionRequestType defines model for CreateTransactionRequest.Type.
+type CreateTransactionRequestType string
 
 // Currency defines model for Currency.
 type Currency string
@@ -329,6 +562,25 @@ type RegisterRequest struct {
 	Password    Password            `json:"password"`
 }
 
+// ReplacementRequest defines model for ReplacementRequest.
+type ReplacementRequest struct {
+	// Operation Typed operation contract. Raw journal entries are never accepted from clients.
+	Operation              CreateTransactionRequest `json:"operation"`
+	ReversalIdempotencyKey openapi_types.UUID       `json:"reversalIdempotencyKey"`
+}
+
+// ReplacementResponse defines model for ReplacementResponse.
+type ReplacementResponse struct {
+	Replacement Transaction `json:"replacement"`
+	Reversal    Transaction `json:"reversal"`
+}
+
+// ReversalRequest defines model for ReversalRequest.
+type ReversalRequest struct {
+	Description    *string            `json:"description,omitempty"`
+	IdempotencyKey openapi_types.UUID `json:"idempotencyKey"`
+}
+
 // Session defines model for Session.
 type Session struct {
 	CreatedAt  time.Time          `json:"createdAt"`
@@ -372,6 +624,51 @@ type TOTPSetupResponse struct {
 	Secret          string `json:"secret"`
 }
 
+// Transaction defines model for Transaction.
+type Transaction struct {
+	Amount                PositiveDecimalAmount `json:"amount"`
+	CategoryId            *openapi_types.UUID   `json:"categoryId,omitempty"`
+	CategoryName          *string               `json:"categoryName,omitempty"`
+	CounterpartyAccountId *openapi_types.UUID   `json:"counterpartyAccountId,omitempty"`
+	CounterpartyName      *string               `json:"counterpartyName,omitempty"`
+	Currency              Currency              `json:"currency"`
+	Description           *string               `json:"description,omitempty"`
+	EventDate             openapi_types.Date    `json:"eventDate"`
+	Id                    openapi_types.UUID    `json:"id"`
+	PostedAt              time.Time             `json:"postedAt"`
+	PrimaryAccountId      *openapi_types.UUID   `json:"primaryAccountId,omitempty"`
+	PrimaryAccountName    string                `json:"primaryAccountName"`
+	ReplacesTransactionId *openapi_types.UUID   `json:"replacesTransactionId,omitempty"`
+	ReversesTransactionId *openapi_types.UUID   `json:"reversesTransactionId,omitempty"`
+	Status                TransactionStatus     `json:"status"`
+	Type                  TransactionType       `json:"type"`
+}
+
+// TransactionStatus defines model for Transaction.Status.
+type TransactionStatus string
+
+// TransactionListResponse defines model for TransactionListResponse.
+type TransactionListResponse struct {
+	NextCursor   *string       `json:"nextCursor,omitempty"`
+	Transactions []Transaction `json:"transactions"`
+}
+
+// TransactionType defines model for TransactionType.
+type TransactionType string
+
+// UpdateAccountRequest defines model for UpdateAccountRequest.
+type UpdateAccountRequest struct {
+	Archived *bool     `json:"archived,omitempty"`
+	Currency *Currency `json:"currency,omitempty"`
+	Name     *string   `json:"name,omitempty"`
+}
+
+// UpdateCategoryRequest defines model for UpdateCategoryRequest.
+type UpdateCategoryRequest struct {
+	Archived *bool   `json:"archived,omitempty"`
+	Name     *string `json:"name,omitempty"`
+}
+
 // UpdateProfileRequest defines model for UpdateProfileRequest.
 type UpdateProfileRequest struct {
 	CurrentPassword *string             `json:"currentPassword,omitempty"`
@@ -400,6 +697,18 @@ type User struct {
 	TotpEnabled         bool                `json:"totpEnabled"`
 }
 
+// UserAccountClass defines model for UserAccountClass.
+type UserAccountClass string
+
+// AccountId defines model for AccountId.
+type AccountId = openapi_types.UUID
+
+// CategoryId defines model for CategoryId.
+type CategoryId = openapi_types.UUID
+
+// TransactionId defines model for TransactionId.
+type TransactionId = openapi_types.UUID
+
 // BadRequest defines model for BadRequest.
 type BadRequest = ErrorEnvelope
 
@@ -421,6 +730,33 @@ type ServiceUnavailable = ErrorEnvelope
 // Unauthorized defines model for Unauthorized.
 type Unauthorized = ErrorEnvelope
 
+// ListAccountsParams defines parameters for ListAccounts.
+type ListAccountsParams struct {
+	IncludeArchived *bool `form:"includeArchived,omitempty" json:"includeArchived,omitempty"`
+}
+
+// ListCategoriesParams defines parameters for ListCategories.
+type ListCategoriesParams struct {
+	IncludeArchived *bool `form:"includeArchived,omitempty" json:"includeArchived,omitempty"`
+}
+
+// ListTransactionsParams defines parameters for ListTransactions.
+type ListTransactionsParams struct {
+	From       *openapi_types.Date `form:"from,omitempty" json:"from,omitempty"`
+	To         *openapi_types.Date `form:"to,omitempty" json:"to,omitempty"`
+	AccountId  *openapi_types.UUID `form:"accountId,omitempty" json:"accountId,omitempty"`
+	CategoryId *openapi_types.UUID `form:"categoryId,omitempty" json:"categoryId,omitempty"`
+	Type       *TransactionType    `form:"type,omitempty" json:"type,omitempty"`
+	Cursor     *string             `form:"cursor,omitempty" json:"cursor,omitempty"`
+	Limit      *int                `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// CreateAccountJSONRequestBody defines body for CreateAccount for application/json ContentType.
+type CreateAccountJSONRequestBody = CreateAccountRequest
+
+// UpdateAccountJSONRequestBody defines body for UpdateAccount for application/json ContentType.
+type UpdateAccountJSONRequestBody = UpdateAccountRequest
+
 // LoginJSONRequestBody defines body for Login for application/json ContentType.
 type LoginJSONRequestBody = LoginRequest
 
@@ -439,8 +775,23 @@ type ConfirmTOTPJSONRequestBody = TOTPConfirmRequest
 // DisableTOTPJSONRequestBody defines body for DisableTOTP for application/json ContentType.
 type DisableTOTPJSONRequestBody = TOTPDisableRequest
 
+// CreateCategoryJSONRequestBody defines body for CreateCategory for application/json ContentType.
+type CreateCategoryJSONRequestBody = CreateCategoryRequest
+
+// UpdateCategoryJSONRequestBody defines body for UpdateCategory for application/json ContentType.
+type UpdateCategoryJSONRequestBody = UpdateCategoryRequest
+
 // CompleteOnboardingJSONRequestBody defines body for CompleteOnboarding for application/json ContentType.
 type CompleteOnboardingJSONRequestBody = CompleteOnboardingRequest
+
+// CreateTransactionJSONRequestBody defines body for CreateTransaction for application/json ContentType.
+type CreateTransactionJSONRequestBody = CreateTransactionRequest
+
+// ReplaceTransactionJSONRequestBody defines body for ReplaceTransaction for application/json ContentType.
+type ReplaceTransactionJSONRequestBody = ReplacementRequest
+
+// ReverseTransactionJSONRequestBody defines body for ReverseTransaction for application/json ContentType.
+type ReverseTransactionJSONRequestBody = ReversalRequest
 
 // DeleteAccountJSONRequestBody defines body for DeleteAccount for application/json ContentType.
 type DeleteAccountJSONRequestBody = DeleteAccountRequest
@@ -456,6 +807,15 @@ type UpdateUserSettingsJSONRequestBody = UpdateUserSettingsRequest
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
+	// ListAccounts List owned user accounts with exact ledger balances
+	// (GET /api/v1/accounts)
+	ListAccounts(w http.ResponseWriter, r *http.Request, params ListAccountsParams)
+	// CreateAccount Create an account and optionally post its opening balance atomically
+	// (POST /api/v1/accounts)
+	CreateAccount(w http.ResponseWriter, r *http.Request)
+	// UpdateAccount Rename, archive, restore, or change an unused account currency
+	// (PATCH /api/v1/accounts/{accountId})
+	UpdateAccount(w http.ResponseWriter, r *http.Request, accountId AccountId)
 	// Login Authenticate with email and password
 	// (POST /api/v1/auth/login)
 	Login(w http.ResponseWriter, r *http.Request)
@@ -489,6 +849,15 @@ type ServerInterface interface {
 	// SetupTOTP Generate an encrypted pending TOTP credential
 	// (POST /api/v1/auth/totp/setup)
 	SetupTOTP(w http.ResponseWriter, r *http.Request)
+	// ListCategories List owned income and expense categories
+	// (GET /api/v1/categories)
+	ListCategories(w http.ResponseWriter, r *http.Request, params ListCategoriesParams)
+	// CreateCategory Create a category and its private ledger account atomically
+	// (POST /api/v1/categories)
+	CreateCategory(w http.ResponseWriter, r *http.Request)
+	// UpdateCategory Rename, archive, or restore an owned category
+	// (PATCH /api/v1/categories/{categoryId})
+	UpdateCategory(w http.ResponseWriter, r *http.Request, categoryId CategoryId)
 	// GetLiveness Confirm that the API process is running
 	// (GET /api/v1/health/live)
 	GetLiveness(w http.ResponseWriter, r *http.Request)
@@ -498,6 +867,18 @@ type ServerInterface interface {
 	// CompleteOnboarding Save settings, first account, opening balance, and optional recurring income atomically
 	// (POST /api/v1/onboarding/complete)
 	CompleteOnboarding(w http.ResponseWriter, r *http.Request)
+	// ListTransactions List immutable operations using stable cursor pagination
+	// (GET /api/v1/transactions)
+	ListTransactions(w http.ResponseWriter, r *http.Request, params ListTransactionsParams)
+	// CreateTransaction Post one typed financial operation as a balanced transaction
+	// (POST /api/v1/transactions)
+	CreateTransaction(w http.ResponseWriter, r *http.Request)
+	// ReplaceTransaction Atomically reverse an operation and post its corrected replacement
+	// (POST /api/v1/transactions/{transactionId}/replacement)
+	ReplaceTransaction(w http.ResponseWriter, r *http.Request, transactionId TransactionId)
+	// ReverseTransaction Preserve and reverse an owned posted transaction
+	// (POST /api/v1/transactions/{transactionId}/reversal)
+	ReverseTransaction(w http.ResponseWriter, r *http.Request, transactionId TransactionId)
 	// DeleteAccount Permanently delete the user and all owned data after password confirmation
 	// (DELETE /api/v1/users/me)
 	DeleteAccount(w http.ResponseWriter, r *http.Request)
@@ -515,6 +896,24 @@ type ServerInterface interface {
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
 
 type Unimplemented struct{}
+
+// ListAccounts List owned user accounts with exact ledger balances
+// (GET /api/v1/accounts)
+func (_ Unimplemented) ListAccounts(w http.ResponseWriter, r *http.Request, params ListAccountsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// CreateAccount Create an account and optionally post its opening balance atomically
+// (POST /api/v1/accounts)
+func (_ Unimplemented) CreateAccount(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// UpdateAccount Rename, archive, restore, or change an unused account currency
+// (PATCH /api/v1/accounts/{accountId})
+func (_ Unimplemented) UpdateAccount(w http.ResponseWriter, r *http.Request, accountId AccountId) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
 
 // Login Authenticate with email and password
 // (POST /api/v1/auth/login)
@@ -582,6 +981,24 @@ func (_ Unimplemented) SetupTOTP(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
+// ListCategories List owned income and expense categories
+// (GET /api/v1/categories)
+func (_ Unimplemented) ListCategories(w http.ResponseWriter, r *http.Request, params ListCategoriesParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// CreateCategory Create a category and its private ledger account atomically
+// (POST /api/v1/categories)
+func (_ Unimplemented) CreateCategory(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// UpdateCategory Rename, archive, or restore an owned category
+// (PATCH /api/v1/categories/{categoryId})
+func (_ Unimplemented) UpdateCategory(w http.ResponseWriter, r *http.Request, categoryId CategoryId) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
 // GetLiveness Confirm that the API process is running
 // (GET /api/v1/health/live)
 func (_ Unimplemented) GetLiveness(w http.ResponseWriter, r *http.Request) {
@@ -597,6 +1014,30 @@ func (_ Unimplemented) GetReadiness(w http.ResponseWriter, r *http.Request) {
 // CompleteOnboarding Save settings, first account, opening balance, and optional recurring income atomically
 // (POST /api/v1/onboarding/complete)
 func (_ Unimplemented) CompleteOnboarding(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ListTransactions List immutable operations using stable cursor pagination
+// (GET /api/v1/transactions)
+func (_ Unimplemented) ListTransactions(w http.ResponseWriter, r *http.Request, params ListTransactionsParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// CreateTransaction Post one typed financial operation as a balanced transaction
+// (POST /api/v1/transactions)
+func (_ Unimplemented) CreateTransaction(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ReplaceTransaction Atomically reverse an operation and post its corrected replacement
+// (POST /api/v1/transactions/{transactionId}/replacement)
+func (_ Unimplemented) ReplaceTransaction(w http.ResponseWriter, r *http.Request, transactionId TransactionId) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// ReverseTransaction Preserve and reverse an owned posted transaction
+// (POST /api/v1/transactions/{transactionId}/reversal)
+func (_ Unimplemented) ReverseTransaction(w http.ResponseWriter, r *http.Request, transactionId TransactionId) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -632,6 +1073,79 @@ type ServerInterfaceWrapper struct {
 }
 
 type MiddlewareFunc func(http.Handler) http.Handler
+
+// ListAccounts operation middleware
+func (siw *ServerInterfaceWrapper) ListAccounts(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListAccountsParams
+
+	// ------------- Optional query parameter "includeArchived" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "includeArchived", r.URL.Query(), &params.IncludeArchived, runtime.BindQueryParameterOptions{Type: "boolean", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "includeArchived"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "includeArchived", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListAccounts(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateAccount operation middleware
+func (siw *ServerInterfaceWrapper) CreateAccount(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateAccount(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateAccount operation middleware
+func (siw *ServerInterfaceWrapper) UpdateAccount(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "accountId" -------------
+	var accountId AccountId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "accountId", chi.URLParam(r, "accountId"), &accountId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "accountId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateAccount(w, r, accountId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
 
 // Login operation middleware
 func (siw *ServerInterfaceWrapper) Login(w http.ResponseWriter, r *http.Request) {
@@ -799,6 +1313,79 @@ func (siw *ServerInterfaceWrapper) SetupTOTP(w http.ResponseWriter, r *http.Requ
 	handler.ServeHTTP(w, r)
 }
 
+// ListCategories operation middleware
+func (siw *ServerInterfaceWrapper) ListCategories(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListCategoriesParams
+
+	// ------------- Optional query parameter "includeArchived" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "includeArchived", r.URL.Query(), &params.IncludeArchived, runtime.BindQueryParameterOptions{Type: "boolean", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "includeArchived"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "includeArchived", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListCategories(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateCategory operation middleware
+func (siw *ServerInterfaceWrapper) CreateCategory(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateCategory(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// UpdateCategory operation middleware
+func (siw *ServerInterfaceWrapper) UpdateCategory(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "categoryId" -------------
+	var categoryId CategoryId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "categoryId", chi.URLParam(r, "categoryId"), &categoryId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "categoryId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.UpdateCategory(w, r, categoryId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
 // GetLiveness operation middleware
 func (siw *ServerInterfaceWrapper) GetLiveness(w http.ResponseWriter, r *http.Request) {
 
@@ -832,6 +1419,183 @@ func (siw *ServerInterfaceWrapper) CompleteOnboarding(w http.ResponseWriter, r *
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.CompleteOnboarding(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ListTransactions operation middleware
+func (siw *ServerInterfaceWrapper) ListTransactions(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params ListTransactionsParams
+
+	// ------------- Optional query parameter "from" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "from", r.URL.Query(), &params.From, runtime.BindQueryParameterOptions{Type: "string", Format: "date"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "from"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "from", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "to" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "to", r.URL.Query(), &params.To, runtime.BindQueryParameterOptions{Type: "string", Format: "date"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "to"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "to", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "accountId" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "accountId", r.URL.Query(), &params.AccountId, runtime.BindQueryParameterOptions{Type: "string", Format: "uuid"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "accountId"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "accountId", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "categoryId" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "categoryId", r.URL.Query(), &params.CategoryId, runtime.BindQueryParameterOptions{Type: "string", Format: "uuid"})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "categoryId"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "categoryId", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "type" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "type", r.URL.Query(), &params.Type, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "type"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "type", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "cursor" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "cursor", r.URL.Query(), &params.Cursor, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "cursor"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "cursor", Err: err})
+		}
+		return
+	}
+
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "limit", r.URL.Query(), &params.Limit, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "limit"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "limit", Err: err})
+		}
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ListTransactions(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// CreateTransaction operation middleware
+func (siw *ServerInterfaceWrapper) CreateTransaction(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.CreateTransaction(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ReplaceTransaction operation middleware
+func (siw *ServerInterfaceWrapper) ReplaceTransaction(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "transactionId" -------------
+	var transactionId TransactionId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "transactionId", chi.URLParam(r, "transactionId"), &transactionId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "transactionId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ReplaceTransaction(w, r, transactionId)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// ReverseTransaction operation middleware
+func (siw *ServerInterfaceWrapper) ReverseTransaction(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "transactionId" -------------
+	var transactionId TransactionId
+
+	err = runtime.BindStyledParameterWithOptions("simple", "transactionId", chi.URLParam(r, "transactionId"), &transactionId, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "string", Format: "uuid", ValueIsUnescaped: r.URL.RawPath == ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "transactionId", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.ReverseTransaction(w, r, transactionId)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -1064,6 +1828,36 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/api/v1/onboarding/complete", wrapper.CompleteOnboarding)
 	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/accounts", wrapper.ListAccounts)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/accounts", wrapper.CreateAccount)
+	})
+	r.Group(func(r chi.Router) {
+		r.Patch(options.BaseURL+"/api/v1/accounts/{accountId}", wrapper.UpdateAccount)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/categories", wrapper.ListCategories)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/categories", wrapper.CreateCategory)
+	})
+	r.Group(func(r chi.Router) {
+		r.Patch(options.BaseURL+"/api/v1/categories/{categoryId}", wrapper.UpdateCategory)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/transactions", wrapper.ListTransactions)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/transactions", wrapper.CreateTransaction)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/transactions/{transactionId}/reversal", wrapper.ReverseTransaction)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/transactions/{transactionId}/replacement", wrapper.ReplaceTransaction)
+	})
 
 	return r
 }
@@ -1073,55 +1867,78 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 // const string: with thousands of chunks the chained `+` fold is several
 // times slower for the Go compiler than parsing a slice literal.
 var swaggerSpec = []string{
-	"3Ftdc9s21v4rGLy9aN+hI9vtdlrfdGTHSbRxbI9kbbdNvR2IPJLQkAAXAOWqXv33HQAkRZDQF20pzt54",
-	"aIoAzseDc56Dj0cc8iTlDJiS+OwRC5ApZxLMP+ck6sO/M5BK/xdypoCZR5KmMQ2Jopx1/pCc6XcynEJC",
-	"9NNXAsb4DP9fZ9l1x/4qO5dCcHHJZhDzFPBisQhwBDIUNNWd4TOcD4hmJKaRGQGNCY0hwosAX3A2jml4",
-	"UHEkz0QISCqiAIW5ABI9UDVFagpI5BZaBLjHFAhGYtPr4WQshkUSxAwEAjP8IsDXXL3hGYsOJ8rNA4MI",
-	"icJoD0QixhUaGykWAe4TBVc0oQoOKNQd5yghbI6IUpCkSuIAT4FEIAzK+6DE/Kg7ViDcQdU8BXyGKVMw",
-	"AaF7XgR4AGJGQxgyMiM0JqMYDjs3qIAIRZACi4CFc5RVBFkEeMhIpqZc0L8OaeFupqbAVN474gKFAiL9",
-	"hsRoBoKOi5+KubwI8rGNC3T7fh55jKhRRPXnJL4VPAWhqA5IYxJLCHBaefWIM2ndtk7+oTTuC7DIDYjP",
-	"PtqG90HhZT76A0Iziy+mhE3glkj5wEU1AO4gVZgJAUwVnehXCfnzCthETfHZyekPAU4oK/7/oZRCKkHZ",
-	"REvB4KHaep165Xd1FetSuL16dedJGoOCGzbiRESUTdrpT8KQZxZ26yRfDtPNG2hoUZnGZH5hhA/nm/oo",
-	"v1sEeJyx0ErYprWAkLOQxtRA9QOPYFPrfrOF7ScT2o89FvIEtjdCv9ZwEWBFE/iLM6gj6PjYQdBJA0E1",
-	"KJT9eI3UNLrXGkHp122x02pK54MMQGVpz6B/zEVCFD7DWUY1jBuzpWbyXZo+LYAEdWm9lqmAEViW6NbD",
-	"wWsc4MthHwf477e/4AC/Pb/FAb641s/dof71omv+vnuDA/zuvX4evDV/L9/jAL/v/4wDfH2jn69/1e97",
-	"17q3D/+8xgG++1m/+bWr35z3r3CAX7/XXw6773TbX+9wgPvDcz3W5euK1EvDvIaQJiTuJsVMTnX+FDre",
-	"/+vop6+P//Px5OjH+4/HRz/e//83X//22yvz+HgS/LD45qevsLdHjY98qrcLLGnbiFpzXrouCrr5bjcB",
-	"oeB+u2SLPNQ0DDamEEdydW+eJg1lEpCSTHz917OFneLF903D1L63mvrs9w5I3DqhS0uwvMppEp7lJmMa",
-	"O5h/8gFtBkJSy3DW65x3GJSjLtv6FLviE8oupiSOgU2gpYJh0f6OfwLm1RP+TKkA2WMDHYQtAhLKaKJj",
-	"xzLWl8zUZxnFVfp7qWuwrSFq0nlkWWmYdjMaEkJjJ1LbN0F1fn97euxx83MFg2LAtUGhyVVaZbWLmEhZ",
-	"TQTdweBSB+OrXve8d9W7+8UbjMMWfIaRZHfeEGCeAqNsck5iwsKN7MXNEo3mr4kCx7mRfuEZVWYj+25p",
-	"mRFhenaHRE5xgEeCfwKhI5N2Hol/B1OSmxk7pWEMZhaHmaBK05eECzWxX8ecaCBzNXUY/wowGKsFrruW",
-	"4lU80bCUV/f1UOo3qeIukEq2Idm3XFJFZ9DwVBtMRWR+M/7AmQaPQZaNSfmMWxOgWoFxhWusBo4rKnL5",
-	"LL5lIXZy6kGm334uH2rDhvrecqMMC8O7G03+bq7f9PofvDFBdzADMX9C8G3mojX++e7Yz7yNEBe5/E7Q",
-	"do37/Sb/NnKP07nPr32YUKlAtNM+L3qu28XJZ0pcrSr7YqSqBhvy1wBkwYl2AYgAoiDqqkYQP9IlJV6Z",
-	"qlSF2Iw4j4GwCrPZpT+6XR0XE6kGAGyXrnUJ1524wq7Aphl0aQ1nvKpaS/3XOOGKStWaHpsezDNVkMhN",
-	"GCr8vqwNiBBk3mSARcc+ue9u7m4vOBtTkbQMNHl4qMRMGyC/X3y1kZyGq6a/I1Yrc1YjjGvTBlgS8mfP",
-	"/nhig0Plv7WWdcdYpcdrKskohkOYN3j+MjpY76TPmqKehr16Tlqrp1kFagnFVPAZ1VOQsslQUDfoCeol",
-	"zRAK2CJ45d8FjTF8egxTHTNvBR/T1nDcvPzd0OUzJeMtEutqIw0liAEoRdlEPomCfLmL3S9qgdrrqXx9",
-	"9zBOqaF4B5w2F/+e5N8tWRMvS9Fi+T7yE7d94KW5eMlVesl0GvRK4aNkfib8TNsdPuu4UnpWSbXx2Zgb",
-	"ILnbt5eDOxRypgQJFRpzYc4PfJi/oYywEFAKQmo5j8b5iwcYocqu7SujmIr1aMtW3dteZdXyDB+/On11",
-	"XCzEkJTiM/ztq5NXx6Y+UFMD8A5JaWd20iGZmnZinZtNAuI2fOmpYAbsRfjMLu1ha3mQ6pxH82fbWHZo",
-	"wcL1rxIZmBeVAymnx8fPNraz5+zZ0855M8o5PxpBSDIJSKd5RCWKLF8zxxpOj0+f1ybNNWaPhEV6RSQM",
-	"IdUyEhYhgjizFY8VtSQw5jRGro0W+jtrTJ8spdE7lSNApsnJ5ibOEQTd6PTHzY2qB0MWAf7bNrK5x21M",
-	"q283t/Ic4DCnEbIkIWLuHmYAe8zHxBhj3ArfVWQizUKNc/YB3+vOmvOrUxQBqyfaP0DQcbGYU1n32M/U",
-	"8y4evbApWMiINOfWkVNmSY5y6c7Ol41nB15FJkGkRBMyELFYq0xfUVV/d8TpNLUV2nSY2BPKGrXfC0NY",
-	"xZRcWJg5wfR/F2YMkYbuO2KMZ2otbdC/N3z7XZMXnQv+IEGUxhYw458gQlwgEgsg0RyRkQS7adEmMziG",
-	"6ZveDfXKy1Q0cgXYxQyW5k/AY4G3oCy/VEN7UuQloBwiZM6ttEXl50zMfVCZYI7nSFOzHZwn8t2D1Sgu",
-	"9hf2loTd7YutouPJwXDTM0c41fxZQ+EWUa085n1A9lhDmvWLDpO0agSrPKJKojEV8kmho7qS7w0gV1Sq",
-	"QfHRHsOHb1PCF0VCRWeASrHbhRDHznpIRNx+y8K4mOO7zuqio85j/tSLFjbp6Hzom+M6IQxKB6ZEkASU",
-	"OR3+8RHr2thUzrjYxMZlv7g+W4OKyTesvSzut8mNAzcntmcTtvP1jcr7At6MyRnUfIW4Oe4/mj/JX5qn",
-	"dkK7i7M6EufbPHvmqrU9rgOzVd92lu8+gy7rwS5AmajkFAoSCZMnNYFiIRyUsu4W3Gt81eiNUmARZRO7",
-	"dqGVo1JmsKIokjvjLF+1WY2zfBtuzzirbfZthTNPdCiN1EBAwmeHLFccV+bK5S4c6zxaliBmhcopPKrX",
-	"Q3Z2pwSVrSlyzXZc6co9sajmvp9vra4K68rlGIdNPc3sb4Fp3UGTFmChmJsqNvUPvKWlp+Ykbyems7V1",
-	"zhWdAQO5V5ZSO1TsIyi3PZQKHoKUiEpEjNT+KKOmRJmkVWsjMsZ0dl5axw7rtYopTdeZpQ8koi/DLnre",
-	"RUSREZGAiNBxVAv/bLWZ17AhYfZOYjn00YiEn8wNQRNt5AZDL/dfjFgFf1vFEOr3T/YUwFdfkjowX1hz",
-	"48Z3N7P8CoXlbtYXwg4GxLBOu9Me5LVXfkQ3QPmxWzSy524Dg3ae2l0/VN4NQtQcskVE8YSGJI7nFfhV",
-	"UONAULNZmS/zrKognHstewKd9+5MW94wlKa2jXICr2cnssp9Ls5wCyIh+vt4nktiokhWCEriuCpsjVXk",
-	"1UOdQ2g1Jb43551UOG06zjnqsifHeY/TvLBlcCtjpDOhscQXEhWs2CjfzEe6Okdc5Nt1ZpnbixCzwmA/",
-	"Cs1dX+nBjCcEdKqn5tLMl4Kcq8P7Sj/e+8ltQ0G5iWxNYRm6uSqxXJFxFh8OHhqsvm4JYSWyUcGRdUtP",
-	"FqkkPxa4OjZUT3jtNUD4jpK90ChRGu/z4CGf9cURnyBfeAopyKAshpdHeVAqYAz6A/CBY2Hv/hWrfZmI",
-	"8VmBF7y4X/w3AAD//w==",
+	"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",
+	"D1ZnrmQiQnyWyQtefl7+bwAAAP//",
 }
 
 // decodeSpec returns the embedded OpenAPI spec as raw JSON bytes,

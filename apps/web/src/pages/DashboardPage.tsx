@@ -1,7 +1,3 @@
-import { useQuery } from "@tanstack/react-query";
-
-import { getReadiness } from "../api/client";
-import { ErrorState, LoadingState } from "../components/AsyncState";
 import { Card } from "../components/Card";
 import { useAuth } from "../auth/useAuth";
 import { en } from "../i18n/en";
@@ -15,10 +11,6 @@ const metrics = [
 
 export function DashboardPage() {
   const { user } = useAuth();
-  const readiness = useQuery({
-    queryKey: ["health", "ready"],
-    queryFn: ({ signal }) => getReadiness(signal),
-  });
 
   return (
     <div className="page-stack">
@@ -27,20 +19,6 @@ export function DashboardPage() {
           <span className="eyebrow">{en.dashboard.eyebrow}</span>
           <h2>{en.dashboard.title}</h2>
           <p>{en.dashboard.description}</p>
-        </div>
-        <div className="health-panel" aria-label={en.dashboard.apiStatus}>
-          <span className="eyebrow">{en.dashboard.apiStatus}</span>
-          {readiness.isPending ? <LoadingState label={en.states.loading} /> : null}
-          {readiness.isError ? (
-            <ErrorState label={en.states.unavailable} onRetry={() => void readiness.refetch()} />
-          ) : null}
-          {readiness.data ? (
-            <div className="inline-state">
-              <span className="status-dot status-dot-ready" aria-hidden="true" />
-              <strong>{en.states.ready}</strong>
-              <span className="muted">v{readiness.data.version}</span>
-            </div>
-          ) : null}
         </div>
       </section>
 

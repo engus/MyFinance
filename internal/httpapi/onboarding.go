@@ -105,6 +105,15 @@ func (server *Server) CompleteOnboarding(writer http.ResponseWriter, request *ht
 		writeError(writer, http.StatusInternalServerError, "internal_error", "An internal error occurred.")
 		return
 	}
+	functionalCurrency, openingEquityID, err := ensureLedgerInfrastructure(request.Context(), tx, authenticated.userID)
+	if err != nil {
+		server.writeLedgerError(writer, request, err)
+		return
+	}
+	if err := materializeOnboardingAccount(request.Context(), tx, authenticated.userID, functionalCurrency, openingEquityID); err != nil {
+		server.writeLedgerError(writer, request, err)
+		return
+	}
 	writeAuthAudit(request.Context(), queries, request, authenticated.userID, "onboarding_completed", true, map[string]string{
 		"recurring_income": boolString(payload.RecurringIncome != nil),
 	})
@@ -162,11 +171,11 @@ func validateOnboarding(payload api.CompleteOnboardingRequest) map[string]string
 	if payload.Account.OpeningBalanceDate.Time.After(time.Now().AddDate(0, 0, 1)) {
 		fields["account.openingBalanceDate"] = "Opening balance date cannot be in the future."
 	}
-	liabilitySubtype := payload.Account.Subtype == api.Loan || payload.Account.Subtype == api.Mortgage
-	if payload.Account.AccountClass == api.ASSET && liabilitySubtype {
+	liabilitySubtype := payload.Account.Subtype == api.OnboardingAccountSubtypeLoan || payload.Account.Subtype == api.OnboardingAccountSubtypeMortgage
+	if payload.Account.AccountClass == api.OnboardingAccountAccountClassASSET && liabilitySubtype {
 		fields["account.subtype"] = "Loan and mortgage accounts must be liabilities."
 	}
-	if payload.Account.AccountClass == api.LIABILITY && !liabilitySubtype && payload.Account.Subtype != api.Other {
+	if payload.Account.AccountClass == api.OnboardingAccountAccountClassLIABILITY && !liabilitySubtype && payload.Account.Subtype != api.OnboardingAccountSubtypeOther {
 		fields["account.subtype"] = "Liabilities must use loan, mortgage, or other."
 	}
 	if payload.RecurringIncome != nil {
