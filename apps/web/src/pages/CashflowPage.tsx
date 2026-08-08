@@ -1,5 +1,6 @@
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useMemo, useState, type FormEvent } from "react";
+import { useSearchParams } from "react-router-dom";
 
 import {
   ApiError,
@@ -24,8 +25,10 @@ import { EmptyState, ErrorState, LoadingState } from "../components/AsyncState";
 import { Card } from "../components/Card";
 import { supportedCurrencies } from "../financial-options";
 import { en } from "../i18n/en";
+import { ReconciliationView } from "./ReconciliationView";
+import { RecurringView } from "./RecurringView";
 
-type CashflowTab = "transactions" | "management";
+type CashflowTab = "transactions" | "recurring" | "reconciliation" | "management";
 type OperationType = CreateTransactionRequest["type"];
 
 const operationTypes: OperationType[] = [
@@ -55,7 +58,16 @@ function operationLabel(type: Transaction["type"] | OperationType) {
 
 export function CashflowPage() {
   const queryClient = useQueryClient();
-  const [tab, setTab] = useState<CashflowTab>("transactions");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const requestedTab = searchParams.get("tab");
+  const [tab, setTab] = useState<CashflowTab>(
+    requestedTab === "reconciliation" ? "reconciliation" : "transactions",
+  );
+  const activeTab = requestedTab === "reconciliation" ? "reconciliation" : tab;
+  const selectTab = (value: CashflowTab) => {
+    setTab(value);
+    setSearchParams(value === "reconciliation" ? { tab: "reconciliation" } : {}, { replace: true });
+  };
   const [operationModal, setOperationModal] = useState<null | { transaction?: Transaction }>(null);
   const [filters, setFilters] = useState<TransactionFilters>({});
   const [includeArchived, setIncludeArchived] = useState(false);
@@ -137,15 +149,29 @@ export function CashflowPage() {
 
       <nav className="segmented-tabs" aria-label={en.cashflow.title}>
         <button
-          className={tab === "transactions" ? "active" : ""}
-          onClick={() => setTab("transactions")}
+          className={activeTab === "transactions" ? "active" : ""}
+          onClick={() => selectTab("transactions")}
           type="button"
         >
           {en.cashflow.transactions}
         </button>
         <button
-          className={tab === "management" ? "active" : ""}
-          onClick={() => setTab("management")}
+          className={activeTab === "recurring" ? "active" : ""}
+          onClick={() => selectTab("recurring")}
+          type="button"
+        >
+          {en.cashflow.recurring}
+        </button>
+        <button
+          className={activeTab === "reconciliation" ? "active" : ""}
+          onClick={() => selectTab("reconciliation")}
+          type="button"
+        >
+          {en.cashflow.reconciliation}
+        </button>
+        <button
+          className={activeTab === "management" ? "active" : ""}
+          onClick={() => selectTab("management")}
           type="button"
         >
           {en.cashflow.accountsAndCategories}
@@ -163,7 +189,7 @@ export function CashflowPage() {
         </Card>
       ) : null}
 
-      {!loading && !failed && tab === "transactions" ? (
+      {!loading && !failed && activeTab === "transactions" ? (
         <TransactionsView
           accounts={activeAccounts}
           categories={activeCategories}
@@ -180,7 +206,7 @@ export function CashflowPage() {
         />
       ) : null}
 
-      {!loading && !failed && tab === "management" ? (
+      {!loading && !failed && activeTab === "management" ? (
         <ManagementView
           accounts={accounts}
           categories={categories}
@@ -189,6 +215,12 @@ export function CashflowPage() {
           onRefresh={refreshLedger}
         />
       ) : null}
+
+      {!loading && !failed && activeTab === "recurring" ? (
+        <RecurringView accounts={activeAccounts} categories={activeCategories} />
+      ) : null}
+
+      {!loading && !failed && activeTab === "reconciliation" ? <ReconciliationView /> : null}
 
       {operationModal ? (
         <OperationDialog
@@ -308,6 +340,7 @@ function TransactionsView({
                   {operationLabel(type)}
                 </option>
               ))}
+              <option value="RECONCILIATION">{en.cashflow.typeLabels.RECONCILIATION}</option>
               <option value="REVERSAL">{en.cashflow.reversal}</option>
             </select>
           </label>
@@ -358,7 +391,10 @@ function TransactionRow({
   onReverse: (transaction: Transaction) => void;
   transaction: Transaction;
 }) {
-  const immutable = transaction.type === "REVERSAL" || transaction.status !== "POSTED";
+  const immutable =
+    transaction.type === "REVERSAL" ||
+    transaction.type === "RECONCILIATION" ||
+    transaction.status !== "POSTED";
   const negative = transaction.type === "EXPENSE" || transaction.type === "ASSET_PURCHASE";
   const statusLabel = {
     POSTED: en.cashflow.posted,

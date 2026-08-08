@@ -22,6 +22,18 @@ export type Transaction = components["schemas"]["Transaction"];
 export type CreateTransactionRequest = components["schemas"]["CreateTransactionRequest"];
 export type TransactionListResponse = components["schemas"]["TransactionListResponse"];
 export type ReplacementResponse = components["schemas"]["ReplacementResponse"];
+export type RecurringTemplate = components["schemas"]["RecurringTemplate"];
+export type CreateRecurringTemplateRequest =
+  components["schemas"]["CreateRecurringTemplateRequest"];
+export type UpdateRecurringTemplateRequest =
+  components["schemas"]["UpdateRecurringTemplateRequest"];
+export type ReconciliationStatus = components["schemas"]["ReconciliationStatus"];
+export type AccountReconciliationStatus = components["schemas"]["AccountReconciliationStatus"];
+export type ReconciliationPreview = components["schemas"]["ReconciliationPreview"];
+export type Reconciliation = components["schemas"]["Reconciliation"];
+export type PrepareReconciliationRequest = components["schemas"]["PrepareReconciliationRequest"];
+export type ReconciliationSubmissionResponse =
+  components["schemas"]["ReconciliationSubmissionResponse"];
 
 export class ApiError extends Error {
   readonly code: string;
@@ -239,6 +251,58 @@ export async function replaceTransaction(
     reversalIdempotencyKey: crypto.randomUUID(),
     operation,
   })) as ReplacementResponse;
+}
+
+export async function listRecurringTemplates(
+  includeArchived = false,
+): Promise<RecurringTemplate[]> {
+  const response = await jsonRequest(
+    `/api/v1/recurring-templates${includeArchived ? "?includeArchived=true" : ""}`,
+    "GET",
+  );
+  return (response as components["schemas"]["RecurringTemplateListResponse"]).templates;
+}
+
+export async function createRecurringTemplate(
+  payload: CreateRecurringTemplateRequest,
+): Promise<RecurringTemplate> {
+  return (await jsonRequest("/api/v1/recurring-templates", "POST", payload)) as RecurringTemplate;
+}
+
+export async function updateRecurringTemplate(
+  templateId: string,
+  payload: UpdateRecurringTemplateRequest,
+): Promise<RecurringTemplate> {
+  return (await jsonRequest(
+    `/api/v1/recurring-templates/${templateId}`,
+    "PATCH",
+    payload,
+  )) as RecurringTemplate;
+}
+
+export async function getReconciliationStatus(periodEnd?: string): Promise<ReconciliationStatus> {
+  const query = periodEnd ? `?periodEnd=${encodeURIComponent(periodEnd)}` : "";
+  return (await jsonRequest(
+    `/api/v1/reconciliation/status${query}`,
+    "GET",
+  )) as ReconciliationStatus;
+}
+
+export async function prepareReconciliation(
+  payload: PrepareReconciliationRequest,
+): Promise<ReconciliationSubmissionResponse> {
+  return (await jsonRequest(
+    "/api/v1/reconciliation/prepare",
+    "POST",
+    payload,
+  )) as ReconciliationSubmissionResponse;
+}
+
+export async function confirmReconciliation(previewId: string): Promise<Reconciliation> {
+  return (await jsonRequest(
+    `/api/v1/reconciliation/previews/${previewId}/confirm`,
+    "POST",
+  )) as Reconciliation;
 }
 
 async function authMutation(path: string, method: string, body: unknown): Promise<User> {

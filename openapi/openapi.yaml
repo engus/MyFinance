@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: MyFinance API
-  version: 0.2.0
+  version: 0.3.0
   description: REST contract for the MyFinance personal-finance web application.
 servers:
   - url: /api/v1
@@ -637,6 +637,145 @@ paths:
           $ref: "#/components/responses/NotFound"
         "409":
           $ref: "#/components/responses/Conflict"
+  /api/v1/recurring-templates:
+    get:
+      operationId: listRecurringTemplates
+      summary: List owned recurring operation templates
+      tags: [Recurring]
+      parameters:
+        - name: includeArchived
+          in: query
+          schema:
+            type: boolean
+            default: false
+      responses:
+        "200":
+          description: Recurring templates
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecurringTemplateListResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      operationId: createRecurringTemplate
+      summary: Create a typed recurring operation template
+      tags: [Recurring]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateRecurringTemplateRequest"
+      responses:
+        "201":
+          description: Recurring template created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecurringTemplate"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /api/v1/recurring-templates/{templateId}:
+    patch:
+      operationId: updateRecurringTemplate
+      summary: Edit, pause, resume, archive, or restore a recurring template
+      tags: [Recurring]
+      parameters:
+        - $ref: "#/components/parameters/TemplateId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateRecurringTemplateRequest"
+      responses:
+        "200":
+          description: Recurring template updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecurringTemplate"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /api/v1/reconciliation/status:
+    get:
+      operationId: getReconciliationStatus
+      summary: Return the reminder window and per-account completion for one month
+      tags: [Reconciliation]
+      parameters:
+        - name: periodEnd
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        "200":
+          description: Reconciliation status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReconciliationStatus"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /api/v1/reconciliation/prepare:
+    post:
+      operationId: prepareReconciliation
+      summary: Preview in CONFIRM mode or atomically apply in AUTO mode
+      tags: [Reconciliation]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PrepareReconciliationRequest"
+      responses:
+        "200":
+          description: Preview created or reconciliation applied
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReconciliationSubmissionResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /api/v1/reconciliation/previews/{previewId}/confirm:
+    post:
+      operationId: confirmReconciliation
+      summary: Revalidate a reconciliation preview and apply it atomically
+      tags: [Reconciliation]
+      parameters:
+        - $ref: "#/components/parameters/PreviewId"
+      responses:
+        "201":
+          description: Reconciliation applied
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Reconciliation"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          $ref: "#/components/responses/Conflict"
 components:
   parameters:
     AccountId:
@@ -655,6 +794,20 @@ components:
         format: uuid
     TransactionId:
       name: transactionId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    TemplateId:
+      name: templateId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    PreviewId:
+      name: previewId
       in: path
       required: true
       schema:
@@ -1278,6 +1431,366 @@ components:
           $ref: "#/components/schemas/Transaction"
         replacement:
           $ref: "#/components/schemas/Transaction"
+    RecurringTemplateListResponse:
+      type: object
+      additionalProperties: false
+      required: [templates]
+      properties:
+        templates:
+          type: array
+          items:
+            $ref: "#/components/schemas/RecurringTemplate"
+    RecurringTemplate:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - name
+        - type
+        - amount
+        - currency
+        - frequency
+        - intervalUnit
+        - intervalCount
+        - startDate
+        - nextScheduledDate
+        - status
+        - archived
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        type:
+          $ref: "#/components/schemas/RecurringOperationType"
+        amount:
+          $ref: "#/components/schemas/PositiveDecimalAmount"
+        currency:
+          $ref: "#/components/schemas/Currency"
+        description:
+          type: string
+        accountId:
+          type: string
+          format: uuid
+        accountName:
+          type: string
+        categoryId:
+          type: string
+          format: uuid
+        categoryName:
+          type: string
+        sourceAccountId:
+          type: string
+          format: uuid
+        sourceAccountName:
+          type: string
+        destinationAccountId:
+          type: string
+          format: uuid
+        destinationAccountName:
+          type: string
+        frequency:
+          $ref: "#/components/schemas/RecurringFrequency"
+        intervalUnit:
+          $ref: "#/components/schemas/RecurringIntervalUnit"
+        intervalCount:
+          type: integer
+        startDate:
+          type: string
+          format: date
+        nextScheduledDate:
+          type: string
+          format: date
+        endDate:
+          type: string
+          format: date
+        lastGeneratedDate:
+          type: string
+          format: date
+        status:
+          $ref: "#/components/schemas/RecurringTemplateStatus"
+        pauseReason:
+          type: string
+        archived:
+          type: boolean
+    CreateRecurringTemplateRequest:
+      type: object
+      additionalProperties: false
+      required: [name, type, amount, frequency, startDate]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        type:
+          $ref: "#/components/schemas/RecurringOperationType"
+        amount:
+          $ref: "#/components/schemas/PositiveDecimalAmount"
+        description:
+          type: string
+          minLength: 1
+          maxLength: 500
+        accountId:
+          type: string
+          format: uuid
+        categoryId:
+          type: string
+          format: uuid
+        sourceAccountId:
+          type: string
+          format: uuid
+        destinationAccountId:
+          type: string
+          format: uuid
+        frequency:
+          $ref: "#/components/schemas/RecurringFrequency"
+        intervalUnit:
+          $ref: "#/components/schemas/RecurringIntervalUnit"
+        intervalCount:
+          type: integer
+          minimum: 1
+          maximum: 365
+        startDate:
+          type: string
+          format: date
+        endDate:
+          type: string
+          format: date
+    UpdateRecurringTemplateRequest:
+      type: object
+      additionalProperties: false
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        amount:
+          $ref: "#/components/schemas/PositiveDecimalAmount"
+        description:
+          type: string
+          minLength: 1
+          maxLength: 500
+        endDate:
+          type: string
+          format: date
+        status:
+          $ref: "#/components/schemas/RecurringTemplateStatus"
+        archived:
+          type: boolean
+    ReconciliationStatus:
+      type: object
+      additionalProperties: false
+      required:
+        - today
+        - suggestedPeriodEnd
+        - periodEnd
+        - promptOpen
+        - promptStart
+        - promptEnd
+        - complete
+        - accounts
+      properties:
+        today:
+          type: string
+          format: date
+        suggestedPeriodEnd:
+          type: string
+          format: date
+        periodEnd:
+          type: string
+          format: date
+        promptOpen:
+          type: boolean
+        promptStart:
+          type: string
+          format: date
+        promptEnd:
+          type: string
+          format: date
+        complete:
+          type: boolean
+        accounts:
+          type: array
+          items:
+            $ref: "#/components/schemas/AccountReconciliationStatus"
+    AccountReconciliationStatus:
+      type: object
+      additionalProperties: false
+      required: [accountId, accountName, currency, ledgerBalance, status, gapMonths, multiMonthGap]
+      properties:
+        accountId:
+          type: string
+          format: uuid
+        accountName:
+          type: string
+        currency:
+          $ref: "#/components/schemas/Currency"
+        ledgerBalance:
+          $ref: "#/components/schemas/DecimalAmount"
+        status:
+          type: string
+          enum: [PENDING, RECONCILED]
+        reportedBalance:
+          $ref: "#/components/schemas/DecimalAmount"
+        difference:
+          $ref: "#/components/schemas/DecimalAmount"
+        reconciliationId:
+          type: string
+          format: uuid
+        lastReconciledPeriodEnd:
+          type: string
+          format: date
+        gapMonths:
+          type: integer
+          minimum: 1
+        multiMonthGap:
+          type: boolean
+    PrepareReconciliationRequest:
+      type: object
+      additionalProperties: false
+      required: [accountId, periodEnd, reportedBalance, idempotencyKey]
+      properties:
+        accountId:
+          type: string
+          format: uuid
+        periodEnd:
+          type: string
+          format: date
+        reportedBalance:
+          $ref: "#/components/schemas/DecimalAmount"
+        idempotencyKey:
+          type: string
+          format: uuid
+    ReconciliationSubmissionResponse:
+      type: object
+      additionalProperties: false
+      required: [outcome]
+      properties:
+        outcome:
+          type: string
+          enum: [PREVIEW, APPLIED]
+        preview:
+          $ref: "#/components/schemas/ReconciliationPreview"
+        reconciliation:
+          $ref: "#/components/schemas/Reconciliation"
+    ReconciliationPreview:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - accountId
+        - accountName
+        - currency
+        - periodEnd
+        - reportedBalance
+        - ledgerBalance
+        - difference
+        - direction
+        - gapMonths
+        - multiMonthGap
+        - expiresAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        accountId:
+          type: string
+          format: uuid
+        accountName:
+          type: string
+        currency:
+          $ref: "#/components/schemas/Currency"
+        periodEnd:
+          type: string
+          format: date
+        reportedBalance:
+          $ref: "#/components/schemas/DecimalAmount"
+        ledgerBalance:
+          $ref: "#/components/schemas/DecimalAmount"
+        difference:
+          $ref: "#/components/schemas/DecimalAmount"
+        direction:
+          type: string
+          enum: [OTHER_INCOME, OTHER_EXPENSE, NONE]
+        gapMonths:
+          type: integer
+          minimum: 1
+        multiMonthGap:
+          type: boolean
+        expiresAt:
+          type: string
+          format: date-time
+    Reconciliation:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - accountId
+        - accountName
+        - currency
+        - periodEnd
+        - reportedBalance
+        - ledgerBalanceBefore
+        - difference
+        - adjustmentAmount
+        - gapMonths
+        - multiMonthGap
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        accountId:
+          type: string
+          format: uuid
+        accountName:
+          type: string
+        currency:
+          $ref: "#/components/schemas/Currency"
+        periodEnd:
+          type: string
+          format: date
+        reportedBalance:
+          $ref: "#/components/schemas/DecimalAmount"
+        ledgerBalanceBefore:
+          $ref: "#/components/schemas/DecimalAmount"
+        difference:
+          $ref: "#/components/schemas/DecimalAmount"
+        adjustmentAmount:
+          $ref: "#/components/schemas/DecimalAmount"
+        adjustmentTransactionId:
+          type: string
+          format: uuid
+        reversalTransactionId:
+          type: string
+          format: uuid
+        supersedesReconciliationId:
+          type: string
+          format: uuid
+        gapStartPeriodEnd:
+          type: string
+          format: date
+        gapMonths:
+          type: integer
+          minimum: 1
+        multiMonthGap:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+    RecurringOperationType:
+      type: string
+      enum: [INCOME, EXPENSE, TRANSFER, ASSET_PURCHASE]
+    RecurringFrequency:
+      type: string
+      enum: [WEEKLY, MONTHLY, QUARTERLY, YEARLY, CUSTOM]
+    RecurringIntervalUnit:
+      type: string
+      enum: [DAYS, WEEKS, MONTHS, YEARS]
+    RecurringTemplateStatus:
+      type: string
+      enum: [ACTIVE, PAUSED]
     UserAccountClass:
       type: string
       enum: [ASSET, LIABILITY]
@@ -1289,7 +1802,7 @@ components:
       enum: [INCOME, EXPENSE]
     TransactionType:
       type: string
-      enum: [OPENING_BALANCE, INCOME, EXPENSE, TRANSFER, ASSET_PURCHASE, REVERSAL]
+      enum: [OPENING_BALANCE, INCOME, EXPENSE, TRANSFER, ASSET_PURCHASE, RECONCILIATION, REVERSAL]
     Password:
       type: string
       minLength: 12

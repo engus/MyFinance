@@ -109,6 +109,75 @@ VALUES
     ('00000000-0000-4000-8000-000000000303', '00000000-0000-4000-8000-000000000001', 'Everyday', 'EXPENSE', '00000000-0000-4000-8000-000000000206')
 ON CONFLICT (id) DO NOTHING;
 
+INSERT INTO recurring_templates (
+    id, user_id, name, operation_type, amount, currency, description,
+    account_id, category_id, frequency, interval_unit, interval_count,
+    start_date, next_scheduled_date
+)
+VALUES
+    (
+        '00000000-0000-4000-8000-000000000102',
+        '00000000-0000-4000-8000-000000000001',
+        'Monthly salary', 'INCOME', 4800, 'USD', 'Expected monthly salary',
+        '00000000-0000-4000-8000-000000000207',
+        '00000000-0000-4000-8000-000000000301',
+        'MONTHLY', 'MONTHS', 1, DATE '2026-09-25', DATE '2026-09-25'
+    ),
+    (
+        '00000000-0000-4000-8000-000000000103',
+        '00000000-0000-4000-8000-000000000001',
+        'Monthly rent', 'EXPENSE', 1450, 'USD', 'Expected monthly rent',
+        '00000000-0000-4000-8000-000000000207',
+        '00000000-0000-4000-8000-000000000302',
+        'MONTHLY', 'MONTHS', 1, DATE '2026-09-01', DATE '2026-09-01'
+    )
+ON CONFLICT (id) DO NOTHING;
+
+UPDATE onboarding_recurring_income_setups
+SET materialized_at = COALESCE(materialized_at, now()), updated_at = now()
+WHERE id = '00000000-0000-4000-8000-000000000102';
+
+INSERT INTO reconciliations (
+    id, user_id, account_id, period_end, reported_balance, ledger_balance_before,
+    net_difference, adjustment_amount, gap_months, idempotency_key
+)
+VALUES
+    (
+        '00000000-0000-4000-8000-000000000601',
+        '00000000-0000-4000-8000-000000000001',
+        '00000000-0000-4000-8000-000000000207',
+        DATE '2026-07-31', 0, 0, 0, 0, 1,
+        '00000000-0000-4000-8000-000000000601'
+    ),
+    (
+        '00000000-0000-4000-8000-000000000602',
+        '00000000-0000-4000-8000-000000000001',
+        '00000000-0000-4000-8000-000000000208',
+        DATE '2026-07-31', 0, 0, 0, 0, 1,
+        '00000000-0000-4000-8000-000000000602'
+    )
+ON CONFLICT (id) DO NOTHING;
+
+INSERT INTO balance_snapshots (
+    id, user_id, account_id, reconciliation_id, period_end, reported_balance, currency
+)
+VALUES
+    (
+        '00000000-0000-4000-8000-000000000701',
+        '00000000-0000-4000-8000-000000000001',
+        '00000000-0000-4000-8000-000000000207',
+        '00000000-0000-4000-8000-000000000601',
+        DATE '2026-07-31', 0, 'USD'
+    ),
+    (
+        '00000000-0000-4000-8000-000000000702',
+        '00000000-0000-4000-8000-000000000001',
+        '00000000-0000-4000-8000-000000000208',
+        '00000000-0000-4000-8000-000000000602',
+        DATE '2026-07-31', 0, 'USD'
+    )
+ON CONFLICT (id) DO NOTHING;
+
 UPDATE onboarding_account_setups
 SET ledger_account_id = '00000000-0000-4000-8000-000000000207', updated_at = now()
 WHERE user_id = '00000000-0000-4000-8000-000000000001' AND ledger_account_id IS NULL;

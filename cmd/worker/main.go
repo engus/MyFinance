@@ -10,6 +10,7 @@ import (
 
 	"github.com/engus/myfinance/internal/config"
 	"github.com/engus/myfinance/internal/database"
+	"github.com/engus/myfinance/internal/httpapi"
 )
 
 func main() {
@@ -45,10 +46,25 @@ func main() {
 			logger.Warn("worker_challenge_cleanup_failed", "error", err)
 			return
 		}
+		recurring, err := httpapi.GenerateRecurring(checkCtx, pool, time.Now(), 100)
+		if err != nil {
+			logger.Warn("worker_recurring_generation_failed", "error", err)
+			return
+		}
+		expiredPreviews, err := pool.Exec(checkCtx, `
+			DELETE FROM reconciliation_previews
+			WHERE expires_at < now() AND confirmed_at IS NULL`)
+		if err != nil {
+			logger.Warn("worker_reconciliation_preview_cleanup_failed", "error", err)
+			return
+		}
 		logger.Info(
 			"worker_cycle_complete",
 			"expired_sessions_deleted", sessionsDeleted,
 			"expired_challenges_deleted", challengesDeleted,
+			"recurring_occurrences_generated", recurring.Generated,
+			"recurring_lock_acquired", recurring.Locked,
+			"expired_reconciliation_previews_deleted", expiredPreviews.RowsAffected(),
 			"version", settings.Version,
 		)
 	}
