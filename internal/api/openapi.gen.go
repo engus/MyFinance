@@ -15,6 +15,7 @@ import (
 
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/go-chi/chi/v5"
+	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
 // Defines values for HealthResponseStatus.
@@ -30,6 +31,11 @@ func (e HealthResponseStatus) Valid() bool {
 	default:
 		return false
 	}
+}
+
+// AuthResponse defines model for AuthResponse.
+type AuthResponse struct {
+	User User `json:"user"`
 }
 
 // ErrorEnvelope defines model for ErrorEnvelope.
@@ -51,8 +57,37 @@ type HealthResponse struct {
 // HealthResponseStatus defines model for HealthResponse.Status.
 type HealthResponseStatus string
 
+// LoginRequest defines model for LoginRequest.
+type LoginRequest struct {
+	Email    openapi_types.Email `json:"email"`
+	Password string              `json:"password"`
+}
+
+// User defines model for User.
+type User struct {
+	DisplayCurrency     string              `json:"displayCurrency"`
+	DisplayName         string              `json:"displayName"`
+	Email               openapi_types.Email `json:"email"`
+	FunctionalCurrency  string              `json:"functionalCurrency"`
+	Id                  openapi_types.UUID  `json:"id"`
+	OnboardingCompleted bool                `json:"onboardingCompleted"`
+	Timezone            string              `json:"timezone"`
+}
+
+// LoginJSONRequestBody defines body for Login for application/json ContentType.
+type LoginJSONRequestBody = LoginRequest
+
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
+	// Login Create a browser session with an email and password
+	// (POST /api/v1/auth/login)
+	Login(w http.ResponseWriter, r *http.Request)
+	// Logout Revoke the current browser session
+	// (POST /api/v1/auth/logout)
+	Logout(w http.ResponseWriter, r *http.Request)
+	// GetCurrentUser Return the user associated with the current browser session
+	// (GET /api/v1/auth/me)
+	GetCurrentUser(w http.ResponseWriter, r *http.Request)
 	// GetLiveness Confirm that the API process is running
 	// (GET /api/v1/health/live)
 	GetLiveness(w http.ResponseWriter, r *http.Request)
@@ -64,6 +99,24 @@ type ServerInterface interface {
 // Unimplemented server implementation that returns http.StatusNotImplemented for each endpoint.
 
 type Unimplemented struct{}
+
+// Login Create a browser session with an email and password
+// (POST /api/v1/auth/login)
+func (_ Unimplemented) Login(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Logout Revoke the current browser session
+// (POST /api/v1/auth/logout)
+func (_ Unimplemented) Logout(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// GetCurrentUser Return the user associated with the current browser session
+// (GET /api/v1/auth/me)
+func (_ Unimplemented) GetCurrentUser(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
 
 // GetLiveness Confirm that the API process is running
 // (GET /api/v1/health/live)
@@ -85,6 +138,48 @@ type ServerInterfaceWrapper struct {
 }
 
 type MiddlewareFunc func(http.Handler) http.Handler
+
+// Login operation middleware
+func (siw *ServerInterfaceWrapper) Login(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.Login(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// Logout operation middleware
+func (siw *ServerInterfaceWrapper) Logout(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.Logout(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// GetCurrentUser operation middleware
+func (siw *ServerInterfaceWrapper) GetCurrentUser(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.GetCurrentUser(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
 
 // GetLiveness operation middleware
 func (siw *ServerInterfaceWrapper) GetLiveness(w http.ResponseWriter, r *http.Request) {
@@ -233,6 +328,15 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/v1/health/ready", wrapper.GetReadiness)
 	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/auth/login", wrapper.Login)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/auth/logout", wrapper.Logout)
+	})
+	r.Group(func(r chi.Router) {
+		r.Get(options.BaseURL+"/api/v1/auth/me", wrapper.GetCurrentUser)
+	})
 
 	return r
 }
@@ -242,15 +346,24 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 // const string: with thousands of chunks the chained `+` fold is several
 // times slower for the Go compiler than parsing a slice literal.
 var swaggerSpec = []string{
-	"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",
+	"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",
+	"8/FeNtHK8iGrcnmz/DcAAP//",
 }
 
 // decodeSpec returns the embedded OpenAPI spec as raw JSON bytes,

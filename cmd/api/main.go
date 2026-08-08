@@ -32,8 +32,15 @@ func main() {
 	defer pool.Close()
 
 	server := &http.Server{
-		Addr:              fmt.Sprintf(":%d", settings.APIPort),
-		Handler:           httpapi.NewHandler(httpapi.NewServer(pool, settings.Version), logger),
+		Addr: fmt.Sprintf(":%d", settings.APIPort),
+		Handler: httpapi.NewHandler(
+			httpapi.NewServer(
+				pool,
+				settings.Version,
+				httpapi.WithSessionConfig(settings.SessionTTL, settings.SessionCookieSecure),
+			),
+			logger,
+		),
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       15 * time.Second,
 		WriteTimeout:      15 * time.Second,

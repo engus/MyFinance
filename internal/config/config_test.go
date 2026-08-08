@@ -13,6 +13,8 @@ func TestLoadUsesEnvironmentAndSafeFallbacks(t *testing.T) {
 	t.Setenv("DATABASE_URL", "postgres://example")
 	t.Setenv("LOG_LEVEL", "debug")
 	t.Setenv("WORKER_INTERVAL", "30m")
+	t.Setenv("SESSION_TTL", "72h")
+	t.Setenv("SESSION_COOKIE_SECURE", "true")
 
 	got := Load()
 
@@ -25,12 +27,18 @@ func TestLoadUsesEnvironmentAndSafeFallbacks(t *testing.T) {
 	if got.LogLevel != slog.LevelDebug || got.WorkerInterval != 30*time.Minute {
 		t.Fatalf("unexpected runtime config: %#v", got)
 	}
+	if got.SessionTTL != 72*time.Hour || !got.SessionCookieSecure {
+		t.Fatalf("unexpected session config: %#v", got)
+	}
 
 	t.Setenv("API_PORT", "invalid")
 	t.Setenv("WORKER_INTERVAL", "invalid")
+	t.Setenv("SESSION_TTL", "invalid")
+	t.Setenv("SESSION_COOKIE_SECURE", "invalid")
 
 	fallback := Load()
-	if fallback.APIPort != 8080 || fallback.WorkerInterval != 24*time.Hour {
+	if fallback.APIPort != 8080 || fallback.WorkerInterval != 24*time.Hour ||
+		fallback.SessionTTL != 30*24*time.Hour || fallback.SessionCookieSecure {
 		t.Fatalf("invalid values should use defaults: %#v", fallback)
 	}
 }

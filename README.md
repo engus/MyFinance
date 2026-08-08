@@ -21,8 +21,21 @@ Start every local service with one command:
 make dev
 ```
 
-Docker Compose builds the application, starts PostgreSQL 17, applies migrations, and waits for the
-API readiness check before starting the frontend.
+Docker Compose builds the application, starts PostgreSQL 17, applies migrations and the idempotent
+development seed, and waits for the API readiness check before starting the frontend.
+
+### Demo login
+
+The local development seed creates a working account automatically:
+
+```text
+Email:    demo@myfinance.local
+Password: DemoFinance2026!
+```
+
+These credentials are intentionally development-only. The database contains an Argon2id password
+hash rather than the plaintext password. Browser sessions are stored in PostgreSQL as token hashes
+and delivered through an HttpOnly, SameSite cookie.
 
 | Service         | Local address                               |
 | --------------- | ------------------------------------------- |
@@ -81,7 +94,8 @@ pages_preview/     Approved and historical visual references
 
 ## Current milestone boundary
 
-The foundation deliberately has no authentication or financial tables yet. The next milestone adds
-registration, secure sessions, optional TOTP, onboarding, and the idempotent demo user. Ledger,
-reconciliation, assets, FX, and complete dummy financial history follow in their dedicated
+This branch adds the first usable identity slice: demo login, logout, current-session lookup,
+database-backed sessions, login rate limiting, protected frontend routes, and an idempotent demo
+seed. Registration, TOTP, recovery codes, profile/session management, account deletion, and
+onboarding remain part of the unfinished Identity milestone. Financial tables begin in later
 milestones.

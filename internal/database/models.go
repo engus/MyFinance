@@ -14,3 +14,29 @@ type AppMetadatum struct {
 	Value     []byte             `json:"value"`
 	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
 }
+
+// Database-backed sessions; only a SHA-256 digest of the browser token is stored.
+type Session struct {
+	ID         pgtype.UUID        `json:"id"`
+	UserID     pgtype.UUID        `json:"user_id"`
+	TokenHash  []byte             `json:"token_hash"`
+	ExpiresAt  pgtype.Timestamptz `json:"expires_at"`
+	LastSeenAt pgtype.Timestamptz `json:"last_seen_at"`
+	UserAgent  pgtype.Text        `json:"user_agent"`
+	CreatedAt  pgtype.Timestamptz `json:"created_at"`
+	RevokedAt  pgtype.Timestamptz `json:"revoked_at"`
+}
+
+// Application identities with normalized email addresses and Argon2id password hashes.
+type User struct {
+	ID                  pgtype.UUID        `json:"id"`
+	Email               string             `json:"email"`
+	DisplayName         string             `json:"display_name"`
+	PasswordHash        string             `json:"password_hash"`
+	Timezone            string             `json:"timezone"`
+	FunctionalCurrency  string             `json:"functional_currency"`
+	DisplayCurrency     string             `json:"display_currency"`
+	OnboardingCompleted bool               `json:"onboarding_completed"`
+	CreatedAt           pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt           pgtype.Timestamptz `json:"updated_at"`
+}

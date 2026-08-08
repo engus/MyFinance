@@ -36,6 +36,106 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorEnvelope"
+  /api/v1/auth/login:
+    post:
+      operationId: login
+      summary: Create a browser session with an email and password
+      tags: [Authentication]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+      responses:
+        "200":
+          description: The session was created
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          description: The request is invalid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "401":
+          description: The credentials are invalid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "429":
+          description: Too many failed login attempts
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "500":
+          description: The session could not be created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "503":
+          description: The database is unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /api/v1/auth/logout:
+    post:
+      operationId: logout
+      summary: Revoke the current browser session
+      tags: [Authentication]
+      responses:
+        "204":
+          description: The browser session was revoked or was already absent
+        "500":
+          description: The session could not be revoked
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+  /api/v1/auth/me:
+    get:
+      operationId: getCurrentUser
+      summary: Return the user associated with the current browser session
+      tags: [Authentication]
+      responses:
+        "200":
+          description: The authenticated user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: The browser session is absent, expired, or revoked
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "500":
+          description: The session could not be read
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+        "503":
+          description: The database is unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
 components:
   schemas:
     HealthResponse:
@@ -68,3 +168,56 @@ components:
               type: object
               additionalProperties:
                 type: string
+    LoginRequest:
+      type: object
+      additionalProperties: false
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 3
+          maxLength: 320
+        password:
+          type: string
+          minLength: 8
+          maxLength: 128
+    AuthResponse:
+      type: object
+      additionalProperties: false
+      required: [user]
+      properties:
+        user:
+          $ref: "#/components/schemas/User"
+    User:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - email
+        - displayName
+        - timezone
+        - functionalCurrency
+        - displayCurrency
+        - onboardingCompleted
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        displayName:
+          type: string
+        timezone:
+          type: string
+        functionalCurrency:
+          type: string
+          minLength: 3
+          maxLength: 3
+        displayCurrency:
+          type: string
+          minLength: 3
+          maxLength: 3
+        onboardingCompleted:
+          type: boolean

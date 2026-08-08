@@ -14,12 +14,35 @@ import (
 )
 
 type Server struct {
-	pool    *pgxpool.Pool
-	version string
+	pool                *pgxpool.Pool
+	version             string
+	sessionTTL          time.Duration
+	sessionCookieSecure bool
+	loginLimiter        *loginLimiter
 }
 
-func NewServer(pool *pgxpool.Pool, version string) *Server {
-	return &Server{pool: pool, version: version}
+type ServerOption func(*Server)
+
+func WithSessionConfig(ttl time.Duration, secureCookie bool) ServerOption {
+	return func(server *Server) {
+		if ttl > 0 {
+			server.sessionTTL = ttl
+		}
+		server.sessionCookieSecure = secureCookie
+	}
+}
+
+func NewServer(pool *pgxpool.Pool, version string, options ...ServerOption) *Server {
+	server := &Server{
+		pool:         pool,
+		version:      version,
+		sessionTTL:   30 * 24 * time.Hour,
+		loginLimiter: newLoginLimiter(10, 15*time.Minute),
+	}
+	for _, option := range options {
+		option(server)
+	}
+	return server
 }
 
 func NewHandler(server *Server, logger *slog.Logger) http.Handler {
@@ -80,6 +103,16 @@ func writeError(writer http.ResponseWriter, status int, code string, message str
 		"error": map[string]string{
 			"code":    code,
 			"message": message,
+		},
+	})
+}
+
+func writeFieldError(writer http.ResponseWriter, status int, code string, message string, fields map[string]string) {
+	writeJSON(writer, status, map[string]any{
+		"error": map[string]any{
+			"code":    code,
+			"message": message,
+			"fields":  fields,
 		},
 	})
 }

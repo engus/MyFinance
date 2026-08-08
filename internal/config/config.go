@@ -11,22 +11,26 @@ import (
 const defaultDatabaseURL = "postgres://myfinance:myfinance@127.0.0.1:5432/myfinance?sslmode=disable"
 
 type Config struct {
-	Environment    string
-	Version        string
-	APIPort        int
-	DatabaseURL    string
-	LogLevel       slog.Level
-	WorkerInterval time.Duration
+	Environment         string
+	Version             string
+	APIPort             int
+	DatabaseURL         string
+	LogLevel            slog.Level
+	WorkerInterval      time.Duration
+	SessionTTL          time.Duration
+	SessionCookieSecure bool
 }
 
 func Load() Config {
 	return Config{
-		Environment:    getString("APP_ENV", "development"),
-		Version:        getString("APP_VERSION", "dev"),
-		APIPort:        getInt("API_PORT", 8080),
-		DatabaseURL:    getString("DATABASE_URL", defaultDatabaseURL),
-		LogLevel:       getLogLevel("LOG_LEVEL", slog.LevelInfo),
-		WorkerInterval: getDuration("WORKER_INTERVAL", 24*time.Hour),
+		Environment:         getString("APP_ENV", "development"),
+		Version:             getString("APP_VERSION", "dev"),
+		APIPort:             getInt("API_PORT", 8080),
+		DatabaseURL:         getString("DATABASE_URL", defaultDatabaseURL),
+		LogLevel:            getLogLevel("LOG_LEVEL", slog.LevelInfo),
+		WorkerInterval:      getDuration("WORKER_INTERVAL", 24*time.Hour),
+		SessionTTL:          getDuration("SESSION_TTL", 30*24*time.Hour),
+		SessionCookieSecure: getBool("SESSION_COOKIE_SECURE", false),
 	}
 }
 
@@ -49,6 +53,14 @@ func getInt(key string, fallback int) int {
 func getDuration(key string, fallback time.Duration) time.Duration {
 	value, err := time.ParseDuration(strings.TrimSpace(os.Getenv(key)))
 	if err != nil || value <= 0 {
+		return fallback
+	}
+	return value
+}
+
+func getBool(key string, fallback bool) bool {
+	value, err := strconv.ParseBool(strings.TrimSpace(os.Getenv(key)))
+	if err != nil {
 		return fallback
 	}
 	return value
