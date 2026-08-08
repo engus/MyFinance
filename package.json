@@ -1,0 +1,39 @@
+{
+  "name": "myfinance",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24.15.0",
+    "npm": ">=11.0.0"
+  },
+  "workspaces": [
+    "apps/web"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspace @myfinance/web",
+    "build": "npm run build --workspace @myfinance/web",
+    "test": "npm run test --workspace @myfinance/web",
+    "lint": "eslint .",
+    "typecheck": "npm run typecheck --workspace @myfinance/web",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "generate:client": "openapi-typescript openapi/openapi.yaml -o apps/web/src/api/schema.gen.ts",
+    "audit:prod": "npm audit --omit=dev --audit-level=high"
+  },
+  "devDependencies": {
+    "@eslint/js": "9.39.5",
+    "@types/node": "24.13.3",
+    "eslint": "9.39.5",
+    "eslint-plugin-react-hooks": "7.0.1",
+    "eslint-plugin-react-refresh": "0.4.26",
+    "globals": "16.4.0",
+    "openapi-typescript": "7.13.0",
+    "prettier": "3.9.6",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.66.0"
+  },
+  "overrides": {
+    "js-yaml": "4.3.1"
+  }
+}

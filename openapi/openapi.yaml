@@ -1,0 +1,70 @@
+openapi: 3.1.0
+info:
+  title: MyFinance API
+  version: 0.1.0
+  description: REST contract for the MyFinance local web application.
+servers:
+  - url: /api/v1
+paths:
+  /api/v1/health/live:
+    get:
+      operationId: getLiveness
+      summary: Confirm that the API process is running
+      tags: [Health]
+      responses:
+        "200":
+          description: API process is alive
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+  /api/v1/health/ready:
+    get:
+      operationId: getReadiness
+      summary: Confirm that the API can serve database-backed requests
+      tags: [Health]
+      responses:
+        "200":
+          description: API and database are ready
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthResponse"
+        "503":
+          description: A required dependency is unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorEnvelope"
+components:
+  schemas:
+    HealthResponse:
+      type: object
+      additionalProperties: false
+      required: [status, service, version]
+      properties:
+        status:
+          type: string
+          const: ok
+        service:
+          type: string
+        version:
+          type: string
+    ErrorEnvelope:
+      type: object
+      additionalProperties: false
+      required: [error]
+      properties:
+        error:
+          type: object
+          additionalProperties: false
+          required: [code, message]
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+            fields:
+              type: object
+              additionalProperties:
+                type: string

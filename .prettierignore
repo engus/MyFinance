@@ -1,0 +1,7 @@
+apps/web/src/api/schema.gen.ts
+internal/api/openapi.gen.go
+.claude
+node_modules
+dist
+coverage
+pages_preview
