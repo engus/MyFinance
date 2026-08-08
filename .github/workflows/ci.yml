@@ -54,8 +54,8 @@ jobs:
 
       - name: Migrate isolated integration database
         run:
-          go run github.com/golang-migrate/migrate/v4/cmd/migrate@v4.19.1 -path db/migrations
-          -database "$TEST_DATABASE_URL" up
+          go run -tags postgres github.com/golang-migrate/migrate/v4/cmd/migrate@v4.19.1 -path
+          db/migrations -database "$TEST_DATABASE_URL" up
 
       - name: Run repository checks
         run: make ci
