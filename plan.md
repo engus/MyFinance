@@ -22,7 +22,7 @@ reviewed pull request per milestone.
 | 3 — Ledger and Cashflow               | `codex/rebuild-03-ledger-cashflow` | Complete; PR #5 merged |
 | 4 — Recurring and Reconciliation      | `codex/rebuild-04-reconciliation`  | Complete; PR #6 merged |
 | 5 — Assets and valuations             | `codex/rebuild-05-assets`          | Complete; PR #7 merged |
-| 6 — FX worker and Dashboard           | `codex/rebuild-06-fx-dashboard`    | Ready for review        |
+| 6 — FX worker and Dashboard           | `codex/rebuild-06-fx-dashboard`    | Ready for review       |
 | 7 — Data ownership and release review | `codex/rebuild-07-local-release`   | Queued                 |
 
 Update this table in every milestone PR. A milestone is marked complete only after its acceptance
