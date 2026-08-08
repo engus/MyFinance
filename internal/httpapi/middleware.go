@@ -3,11 +3,48 @@ package httpapi
 import (
 	"log/slog"
 	"net/http"
+	"net/url"
 	"runtime/debug"
 	"time"
 
 	chimiddleware "github.com/go-chi/chi/v5/middleware"
 )
+
+func securityHeaders(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		writer.Header().Set("Content-Security-Policy", "default-src 'none'; frame-ancestors 'none'")
+		writer.Header().Set("Referrer-Policy", "no-referrer")
+		writer.Header().Set("X-Content-Type-Options", "nosniff")
+		writer.Header().Set("X-Frame-Options", "DENY")
+		next.ServeHTTP(writer, request)
+	})
+}
+
+func csrfProtection(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		if request.Method == http.MethodGet || request.Method == http.MethodHead || request.Method == http.MethodOptions {
+			next.ServeHTTP(writer, request)
+			return
+		}
+		if request.Header.Get("Sec-Fetch-Site") == "cross-site" {
+			writeError(writer, http.StatusForbidden, "cross_site_request_blocked", "Cross-site request was blocked.")
+			return
+		}
+		origin := request.Header.Get("Origin")
+		if origin != "" {
+			parsed, err := url.Parse(origin)
+			expectedHost := request.Header.Get("X-Forwarded-Host")
+			if expectedHost == "" {
+				expectedHost = request.Host
+			}
+			if err != nil || parsed.Host != expectedHost || (parsed.Scheme != "http" && parsed.Scheme != "https") {
+				writeError(writer, http.StatusForbidden, "origin_mismatch", "Request origin was rejected.")
+				return
+			}
+		}
+		next.ServeHTTP(writer, request)
+	})
+}
 
 type responseRecorder struct {
 	http.ResponseWriter

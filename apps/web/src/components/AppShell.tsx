@@ -34,7 +34,7 @@ export function AppShell() {
           </span>
           <span>{en.app.name}</span>
         </div>
-        <nav className="primary-nav" aria-label="Primary navigation">
+        <nav className="primary-nav" aria-label={en.nav.primaryNavigation}>
           {navigation.map((item) => (
             <NavLink key={item.to} className="nav-link" to={item.to}>
               <span className="nav-icon" aria-hidden="true">

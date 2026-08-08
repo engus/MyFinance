@@ -67,6 +67,19 @@ func TestLoginUsesErrorEnvelopeWhenDatabaseIsMissing(t *testing.T) {
 	}
 }
 
+func TestUnsafeCrossSiteRequestIsBlocked(t *testing.T) {
+	handler := NewHandler(NewServer(nil, "test-version"), slog.New(slog.NewTextHandler(io.Discard, nil)))
+	request := httptest.NewRequest(http.MethodPost, "/api/v1/auth/logout", nil)
+	request.Header.Set("Sec-Fetch-Site", "cross-site")
+	recorder := httptest.NewRecorder()
+
+	handler.ServeHTTP(recorder, request)
+
+	if recorder.Code != http.StatusForbidden {
+		t.Fatalf("expected 403, got %d: %s", recorder.Code, recorder.Body.String())
+	}
+}
+
 func TestReadinessUsesErrorEnvelopeWhenDatabaseIsMissing(t *testing.T) {
 	handler := NewHandler(NewServer(nil, "test-version"), slog.New(slog.NewTextHandler(io.Discard, nil)))
 	request := httptest.NewRequest(http.MethodGet, "/api/v1/health/ready", nil)

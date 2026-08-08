@@ -20,6 +20,10 @@ func main() {
 	settings := config.Load()
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: settings.LogLevel}))
 	slog.SetDefault(logger)
+	if err := settings.ValidateAPI(); err != nil {
+		logger.Error("api_configuration_invalid", "error", err)
+		os.Exit(1)
+	}
 
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
@@ -38,6 +42,7 @@ func main() {
 				pool,
 				settings.Version,
 				httpapi.WithSessionConfig(settings.SessionTTL, settings.SessionCookieSecure),
+				httpapi.WithTOTPEncryptionKey(settings.TOTPEncryptionKey),
 			),
 			logger,
 		),

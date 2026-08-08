@@ -1,6 +1,8 @@
 package config
 
 import (
+	"encoding/base64"
+	"errors"
 	"log/slog"
 	"os"
 	"strconv"
@@ -9,6 +11,7 @@ import (
 )
 
 const defaultDatabaseURL = "postgres://myfinance:myfinance@127.0.0.1:5432/myfinance?sslmode=disable"
+const defaultDevelopmentTOTPKey = "MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY="
 
 type Config struct {
 	Environment         string
@@ -19,6 +22,7 @@ type Config struct {
 	WorkerInterval      time.Duration
 	SessionTTL          time.Duration
 	SessionCookieSecure bool
+	TOTPEncryptionKey   []byte
 }
 
 func Load() Config {
@@ -31,7 +35,21 @@ func Load() Config {
 		WorkerInterval:      getDuration("WORKER_INTERVAL", 24*time.Hour),
 		SessionTTL:          getDuration("SESSION_TTL", 30*24*time.Hour),
 		SessionCookieSecure: getBool("SESSION_COOKIE_SECURE", false),
+		TOTPEncryptionKey:   getBase64Key("TOTP_ENCRYPTION_KEY", defaultDevelopmentTOTPKey),
 	}
+}
+
+func (config Config) ValidateAPI() error {
+	if len(config.TOTPEncryptionKey) != 32 {
+		return errors.New("TOTP_ENCRYPTION_KEY must be base64 for exactly 32 bytes")
+	}
+	if strings.EqualFold(config.Environment, "production") && strings.TrimSpace(os.Getenv("TOTP_ENCRYPTION_KEY")) == "" {
+		return errors.New("TOTP_ENCRYPTION_KEY is required in production")
+	}
+	if strings.EqualFold(config.Environment, "production") && !config.SessionCookieSecure {
+		return errors.New("SESSION_COOKIE_SECURE must be true in production")
+	}
+	return nil
 }
 
 func getString(key string, fallback string) string {
@@ -64,6 +82,15 @@ func getBool(key string, fallback bool) bool {
 		return fallback
 	}
 	return value
+}
+
+func getBase64Key(key string, fallback string) []byte {
+	value := getString(key, fallback)
+	decoded, err := base64.StdEncoding.DecodeString(value)
+	if err != nil {
+		return nil
+	}
+	return decoded
 }
 
 func getLogLevel(key string, fallback slog.Level) slog.Level {

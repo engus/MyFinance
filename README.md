@@ -4,9 +4,9 @@ MyFinance is a privacy-conscious personal finance web application for understand
 worth without recording every purchase. The application is being rebuilt milestone by milestone from
 the specification in [`promt.md`](promt.md) and the delivery plan in [`plan.md`](plan.md).
 
-This branch contains the local platform foundation: a React/Vite frontend, Go API and worker,
-PostgreSQL, OpenAPI-generated contracts, sqlc bindings, structured logs, health endpoints, and the
-approved Calm Ledger visual system.
+This branch contains the complete Identity milestone on top of the local platform foundation:
+registration, password and optional TOTP login, secure database sessions, onboarding, personal
+settings, and the approved Calm Ledger interface.
 
 ## Start locally
 
@@ -36,6 +36,10 @@ Password: DemoFinance2026!
 These credentials are intentionally development-only. The database contains an Argon2id password
 hash rather than the plaintext password. Browser sessions are stored in PostgreSQL as token hashes
 and delivered through an HttpOnly, SameSite cookie.
+
+The idempotent seed also creates setup data for the demo user: a `Primary checking` account with a
+`12,450.75 USD` balance dated `2026-08-01` and a `4,800.00 USD` monthly salary expected on day 25.
+These setup records will become immutable ledger operations in Milestone 3.
 
 | Service         | Local address                               |
 | --------------- | ------------------------------------------- |
@@ -94,8 +98,11 @@ pages_preview/     Approved and historical visual references
 
 ## Current milestone boundary
 
-This branch adds the first usable identity slice: demo login, logout, current-session lookup,
-database-backed sessions, login rate limiting, protected frontend routes, and an idempotent demo
-seed. Registration, TOTP, recovery codes, profile/session management, account deletion, and
-onboarding remain part of the unfinished Identity milestone. Financial tables begin in later
-milestones.
+Milestone 2 implements registration, normalized email/password login, optional TOTP with encrypted
+secrets, one-use hashed recovery codes, session review/revocation, profile/password/settings
+changes, password-confirmed account deletion, and onboarding for timezone, currencies,
+reconciliation mode, the first account/opening balance, and optional recurring income.
+
+Opening-balance and recurring-income setup data is intentionally not posted into an ad-hoc ledger.
+Milestone 3 will materialize it through the same immutable, balanced operations used by Cashflow.
+Durable multi-instance rate limiting and all financial records remain outside this milestone.

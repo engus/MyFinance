@@ -4,7 +4,11 @@ import {
   getCurrentUser,
   login as requestLogin,
   logout as requestLogout,
+  register as requestRegister,
+  verifyLoginRecoveryCode,
+  verifyLoginTOTP,
   type LoginRequest,
+  type RegisterRequest,
   type User,
 } from "../api/client";
 import { AuthContext } from "./auth-context";
@@ -25,7 +29,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const login = useCallback(async (payload: LoginRequest) => {
-    setUser(await requestLogin(payload));
+    const result = await requestLogin(payload);
+    if ("status" in result) {
+      return result;
+    }
+    setUser(result);
+    return null;
+  }, []);
+
+  const register = useCallback(async (payload: RegisterRequest) => {
+    setUser(await requestRegister(payload));
+  }, []);
+
+  const verifyTOTP = useCallback(async (challengeToken: string, code: string) => {
+    setUser(await verifyLoginTOTP(challengeToken, code));
+  }, []);
+
+  const verifyRecoveryCode = useCallback(async (challengeToken: string, recoveryCode: string) => {
+    setUser(await verifyLoginRecoveryCode(challengeToken, recoveryCode));
   }, []);
 
   const logout = useCallback(async () => {
@@ -34,8 +55,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const value = useMemo(
-    () => ({ user, isLoading, login, logout }),
-    [isLoading, login, logout, user],
+    () => ({
+      user,
+      isLoading,
+      login,
+      register,
+      verifyTOTP,
+      verifyRecoveryCode,
+      logout,
+      updateUser: setUser,
+    }),
+    [isLoading, login, logout, register, user, verifyRecoveryCode, verifyTOTP],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

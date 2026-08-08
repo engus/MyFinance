@@ -1,8 +1,8 @@
 openapi: 3.1.0
 info:
   title: MyFinance API
-  version: 0.1.0
-  description: REST contract for the MyFinance local web application.
+  version: 0.2.0
+  description: REST contract for the MyFinance personal-finance web application.
 servers:
   - url: /api/v1
 paths:
@@ -31,15 +31,37 @@ paths:
               schema:
                 $ref: "#/components/schemas/HealthResponse"
         "503":
-          description: A required dependency is unavailable
+          $ref: "#/components/responses/ServiceUnavailable"
+  /api/v1/auth/register:
+    post:
+      operationId: register
+      summary: Register an identity and create its first browser session
+      tags: [Authentication]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterRequest"
+      responses:
+        "201":
+          description: Identity and session created
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "409":
+          $ref: "#/components/responses/Conflict"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
   /api/v1/auth/login:
     post:
       operationId: login
-      summary: Create a browser session with an email and password
+      summary: Authenticate with email and password
       tags: [Authentication]
       requestBody:
         required: true
@@ -49,49 +71,75 @@ paths:
               $ref: "#/components/schemas/LoginRequest"
       responses:
         "200":
-          description: The session was created
-          headers:
-            Set-Cookie:
+          description: Session created because TOTP is disabled
+          content:
+            application/json:
               schema:
-                type: string
+                $ref: "#/components/schemas/AuthResponse"
+        "202":
+          description: Password accepted and a one-time TOTP challenge was created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginChallengeResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
+        "500":
+          $ref: "#/components/responses/InternalError"
+        "503":
+          $ref: "#/components/responses/ServiceUnavailable"
+  /api/v1/auth/login/totp:
+    post:
+      operationId: verifyLoginTOTP
+      summary: Complete a password login with an authenticator code
+      tags: [Authentication]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TOTPLoginRequest"
+      responses:
+        "200":
+          description: Authenticator code accepted and session created
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/AuthResponse"
         "400":
-          description: The request is invalid
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
+          $ref: "#/components/responses/BadRequest"
         "401":
-          description: The credentials are invalid
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
+          $ref: "#/components/responses/Unauthorized"
         "429":
-          description: Too many failed login attempts
-          headers:
-            Retry-After:
-              schema:
-                type: integer
+          $ref: "#/components/responses/RateLimited"
+  /api/v1/auth/login/recovery:
+    post:
+      operationId: verifyLoginRecoveryCode
+      summary: Complete a password login with a one-time recovery code
+      tags: [Authentication]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RecoveryLoginRequest"
+      responses:
+        "200":
+          description: Recovery code consumed and session created
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-        "500":
-          description: The session could not be created
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
-        "503":
-          description: The database is unavailable
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          $ref: "#/components/responses/RateLimited"
   /api/v1/auth/logout:
     post:
       operationId: logout
@@ -99,44 +147,270 @@ paths:
       tags: [Authentication]
       responses:
         "204":
-          description: The browser session was revoked or was already absent
+          description: Browser session revoked or already absent
         "500":
-          description: The session could not be revoked
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
+          $ref: "#/components/responses/InternalError"
   /api/v1/auth/me:
     get:
       operationId: getCurrentUser
-      summary: Return the user associated with the current browser session
+      summary: Return the current authenticated user
       tags: [Authentication]
       responses:
         "200":
-          description: The authenticated user
+          description: Authenticated user
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/AuthResponse"
         "401":
-          description: The browser session is absent, expired, or revoked
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
+          $ref: "#/components/responses/Unauthorized"
         "500":
-          description: The session could not be read
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
+          $ref: "#/components/responses/InternalError"
         "503":
-          description: The database is unavailable
+          $ref: "#/components/responses/ServiceUnavailable"
+  /api/v1/auth/sessions:
+    get:
+      operationId: listSessions
+      summary: List active sessions for the current user
+      tags: [Authentication]
+      responses:
+        "200":
+          description: Active sessions
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ErrorEnvelope"
+                $ref: "#/components/schemas/SessionListResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /api/v1/auth/sessions/{sessionId}:
+    delete:
+      operationId: revokeSession
+      summary: Revoke one active session owned by the current user
+      tags: [Authentication]
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "204":
+          description: Session revoked
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+  /api/v1/auth/totp/setup:
+    post:
+      operationId: setupTOTP
+      summary: Generate an encrypted pending TOTP credential
+      tags: [Authentication]
+      responses:
+        "201":
+          description: Pending TOTP credential created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TOTPSetupResponse"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /api/v1/auth/totp/confirm:
+    post:
+      operationId: confirmTOTP
+      summary: Confirm pending TOTP and issue one-time recovery codes
+      tags: [Authentication]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TOTPConfirmRequest"
+      responses:
+        "200":
+          description: TOTP enabled and recovery codes returned once
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TOTPConfirmResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/Conflict"
+  /api/v1/auth/totp/disable:
+    post:
+      operationId: disableTOTP
+      summary: Disable TOTP after password and authenticator verification
+      tags: [Authentication]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TOTPDisableRequest"
+      responses:
+        "204":
+          description: TOTP and recovery codes removed
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /api/v1/users/me:
+    patch:
+      operationId: updateProfile
+      summary: Update display name or email with password confirmation for email changes
+      tags: [Users]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateProfileRequest"
+      responses:
+        "200":
+          description: Updated profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/Conflict"
+    delete:
+      operationId: deleteAccount
+      summary: Permanently delete the user and all owned data after password confirmation
+      tags: [Users]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeleteAccountRequest"
+      responses:
+        "204":
+          description: User and owned data deleted
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /api/v1/users/me/password:
+    put:
+      operationId: changePassword
+      summary: Change password and revoke all other sessions
+      tags: [Users]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ChangePasswordRequest"
+      responses:
+        "204":
+          description: Password changed and other sessions revoked
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /api/v1/users/me/settings:
+    patch:
+      operationId: updateUserSettings
+      summary: Update timezone, currencies, and reconciliation preference
+      tags: [Users]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateUserSettingsRequest"
+      responses:
+        "200":
+          description: Updated settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+  /api/v1/onboarding/complete:
+    post:
+      operationId: completeOnboarding
+      summary:
+        Save settings, first account, opening balance, and optional recurring income atomically
+      tags: [Onboarding]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CompleteOnboardingRequest"
+      responses:
+        "200":
+          description: Onboarding completed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CompleteOnboardingResponse"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "409":
+          $ref: "#/components/responses/Conflict"
 components:
+  responses:
+    BadRequest:
+      description: Request validation failed
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorEnvelope"
+    Unauthorized:
+      description: Authentication or credential verification failed
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorEnvelope"
+    Conflict:
+      description: Resource state conflicts with the request
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorEnvelope"
+    NotFound:
+      description: Owned resource was not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorEnvelope"
+    RateLimited:
+      description: Too many attempts
+      headers:
+        Retry-After:
+          schema:
+            type: integer
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorEnvelope"
+    InternalError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorEnvelope"
+    ServiceUnavailable:
+      description: Required dependency unavailable
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorEnvelope"
   schemas:
     HealthResponse:
       type: object
@@ -168,6 +442,21 @@ components:
               type: object
               additionalProperties:
                 type: string
+    RegisterRequest:
+      type: object
+      additionalProperties: false
+      required: [email, displayName, password]
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 320
+        displayName:
+          type: string
+          minLength: 1
+          maxLength: 100
+        password:
+          $ref: "#/components/schemas/Password"
     LoginRequest:
       type: object
       additionalProperties: false
@@ -176,12 +465,49 @@ components:
         email:
           type: string
           format: email
-          minLength: 3
           maxLength: 320
         password:
           type: string
           minLength: 8
           maxLength: 128
+    TOTPLoginRequest:
+      type: object
+      additionalProperties: false
+      required: [challengeToken, code]
+      properties:
+        challengeToken:
+          type: string
+          minLength: 40
+          maxLength: 100
+        code:
+          type: string
+          pattern: "^[0-9]{6}$"
+    RecoveryLoginRequest:
+      type: object
+      additionalProperties: false
+      required: [challengeToken, recoveryCode]
+      properties:
+        challengeToken:
+          type: string
+          minLength: 40
+          maxLength: 100
+        recoveryCode:
+          type: string
+          minLength: 16
+          maxLength: 32
+    LoginChallengeResponse:
+      type: object
+      additionalProperties: false
+      required: [status, challengeToken, expiresInSeconds]
+      properties:
+        status:
+          type: string
+          const: totp_required
+        challengeToken:
+          type: string
+        expiresInSeconds:
+          type: integer
+          minimum: 1
     AuthResponse:
       type: object
       additionalProperties: false
@@ -199,7 +525,9 @@ components:
         - timezone
         - functionalCurrency
         - displayCurrency
+        - reconciliationMode
         - onboardingCompleted
+        - totpEnabled
       properties:
         id:
           type: string
@@ -212,12 +540,250 @@ components:
         timezone:
           type: string
         functionalCurrency:
-          type: string
-          minLength: 3
-          maxLength: 3
+          $ref: "#/components/schemas/Currency"
         displayCurrency:
-          type: string
-          minLength: 3
-          maxLength: 3
+          $ref: "#/components/schemas/Currency"
+        reconciliationMode:
+          $ref: "#/components/schemas/ReconciliationMode"
         onboardingCompleted:
           type: boolean
+        totpEnabled:
+          type: boolean
+    SessionListResponse:
+      type: object
+      additionalProperties: false
+      required: [sessions]
+      properties:
+        sessions:
+          type: array
+          items:
+            $ref: "#/components/schemas/Session"
+    Session:
+      type: object
+      additionalProperties: false
+      required: [id, createdAt, lastSeenAt, expiresAt, current]
+      properties:
+        id:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+        lastSeenAt:
+          type: string
+          format: date-time
+        expiresAt:
+          type: string
+          format: date-time
+        userAgent:
+          type: string
+        current:
+          type: boolean
+    TOTPSetupResponse:
+      type: object
+      additionalProperties: false
+      required: [secret, provisioningUri]
+      properties:
+        secret:
+          type: string
+        provisioningUri:
+          type: string
+          format: uri
+    TOTPConfirmRequest:
+      type: object
+      additionalProperties: false
+      required: [code]
+      properties:
+        code:
+          type: string
+          pattern: "^[0-9]{6}$"
+    TOTPConfirmResponse:
+      type: object
+      additionalProperties: false
+      required: [recoveryCodes]
+      properties:
+        recoveryCodes:
+          type: array
+          minItems: 10
+          maxItems: 10
+          items:
+            type: string
+    TOTPDisableRequest:
+      type: object
+      additionalProperties: false
+      required: [password, code]
+      properties:
+        password:
+          type: string
+          minLength: 8
+          maxLength: 128
+        code:
+          type: string
+          pattern: "^[0-9]{6}$"
+    UpdateProfileRequest:
+      type: object
+      additionalProperties: false
+      required: [email, displayName]
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 320
+        displayName:
+          type: string
+          minLength: 1
+          maxLength: 100
+        currentPassword:
+          type: string
+          maxLength: 128
+    ChangePasswordRequest:
+      type: object
+      additionalProperties: false
+      required: [currentPassword, newPassword]
+      properties:
+        currentPassword:
+          type: string
+          minLength: 8
+          maxLength: 128
+        newPassword:
+          $ref: "#/components/schemas/Password"
+    UpdateUserSettingsRequest:
+      type: object
+      additionalProperties: false
+      required: [timezone, functionalCurrency, displayCurrency, reconciliationMode]
+      properties:
+        timezone:
+          type: string
+          minLength: 1
+          maxLength: 100
+        functionalCurrency:
+          $ref: "#/components/schemas/Currency"
+        displayCurrency:
+          $ref: "#/components/schemas/Currency"
+        reconciliationMode:
+          $ref: "#/components/schemas/ReconciliationMode"
+    DeleteAccountRequest:
+      type: object
+      additionalProperties: false
+      required: [password]
+      properties:
+        password:
+          type: string
+          minLength: 8
+          maxLength: 128
+    CompleteOnboardingRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - timezone
+        - functionalCurrency
+        - displayCurrency
+        - reconciliationMode
+        - account
+      properties:
+        timezone:
+          type: string
+          minLength: 1
+          maxLength: 100
+        functionalCurrency:
+          $ref: "#/components/schemas/Currency"
+        displayCurrency:
+          $ref: "#/components/schemas/Currency"
+        reconciliationMode:
+          $ref: "#/components/schemas/ReconciliationMode"
+        account:
+          $ref: "#/components/schemas/OnboardingAccount"
+        recurringIncome:
+          $ref: "#/components/schemas/OnboardingRecurringIncome"
+    OnboardingAccount:
+      type: object
+      additionalProperties: false
+      required: [name, accountClass, subtype, currency, openingBalance, openingBalanceDate]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        accountClass:
+          type: string
+          enum: [ASSET, LIABILITY]
+        subtype:
+          type: string
+          enum: [bank, cash, brokerage, real_estate, vehicle, security, mortgage, loan, other]
+        currency:
+          $ref: "#/components/schemas/Currency"
+        openingBalance:
+          $ref: "#/components/schemas/DecimalAmount"
+        openingBalanceDate:
+          type: string
+          format: date
+    OnboardingRecurringIncome:
+      type: object
+      additionalProperties: false
+      required: [name, amount, currency, dayOfMonth]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        amount:
+          $ref: "#/components/schemas/PositiveDecimalAmount"
+        currency:
+          $ref: "#/components/schemas/Currency"
+        dayOfMonth:
+          type: integer
+          minimum: 1
+          maximum: 28
+    CompleteOnboardingResponse:
+      type: object
+      additionalProperties: false
+      required: [user, accountSetupId]
+      properties:
+        user:
+          $ref: "#/components/schemas/User"
+        accountSetupId:
+          type: string
+          format: uuid
+        recurringIncomeSetupId:
+          type: string
+          format: uuid
+    Password:
+      type: string
+      minLength: 12
+      maxLength: 128
+    DecimalAmount:
+      type: string
+      pattern: "^-?(0|[1-9][0-9]*)(\\.[0-9]{1,8})?$"
+    PositiveDecimalAmount:
+      type: string
+      pattern: "^(0|[1-9][0-9]*)(\\.[0-9]{1,8})?$"
+    ReconciliationMode:
+      type: string
+      enum: [AUTO, CONFIRM]
+    Currency:
+      type: string
+      enum:
+        - USD
+        - EUR
+        - JPY
+        - GBP
+        - CNY
+        - AUD
+        - CAD
+        - CHF
+        - HKD
+        - SGD
+        - SEK
+        - KRW
+        - NOK
+        - NZD
+        - INR
+        - MXN
+        - TWD
+        - ZAR
+        - BRL
+        - DKK
+        - UAH
+        - KZT
+        - RUB
+        - AED

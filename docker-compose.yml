@@ -13,6 +13,7 @@ x-app-environment: &app-environment
   LOG_LEVEL: ${LOG_LEVEL:-info}
   SESSION_TTL: ${SESSION_TTL:-720h}
   SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-false}
+  TOTP_ENCRYPTION_KEY: ${TOTP_ENCRYPTION_KEY:-MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=}
 
 services:
   postgres:

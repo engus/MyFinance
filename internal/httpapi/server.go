@@ -19,6 +19,15 @@ type Server struct {
 	sessionTTL          time.Duration
 	sessionCookieSecure bool
 	loginLimiter        *loginLimiter
+	registrationLimiter *loginLimiter
+	totpEncryptionKey   []byte
+	loginChallengeTTL   time.Duration
+}
+
+func WithTOTPEncryptionKey(key []byte) ServerOption {
+	return func(server *Server) {
+		server.totpEncryptionKey = append([]byte(nil), key...)
+	}
 }
 
 type ServerOption func(*Server)
@@ -34,10 +43,12 @@ func WithSessionConfig(ttl time.Duration, secureCookie bool) ServerOption {
 
 func NewServer(pool *pgxpool.Pool, version string, options ...ServerOption) *Server {
 	server := &Server{
-		pool:         pool,
-		version:      version,
-		sessionTTL:   30 * 24 * time.Hour,
-		loginLimiter: newLoginLimiter(10, 15*time.Minute),
+		pool:                pool,
+		version:             version,
+		sessionTTL:          30 * 24 * time.Hour,
+		loginLimiter:        newLoginLimiter(10, 15*time.Minute),
+		registrationLimiter: newLoginLimiter(5, time.Hour),
+		loginChallengeTTL:   5 * time.Minute,
 	}
 	for _, option := range options {
 		option(server)
@@ -49,6 +60,8 @@ func NewHandler(server *Server, logger *slog.Logger) http.Handler {
 	router := chi.NewRouter()
 	router.Use(chimiddleware.RequestID)
 	router.Use(func(next http.Handler) http.Handler { return requestContext(logger, next) })
+	router.Use(func(next http.Handler) http.Handler { return securityHeaders(next) })
+	router.Use(func(next http.Handler) http.Handler { return csrfProtection(next) })
 	router.Use(func(next http.Handler) http.Handler { return accessLog(logger, next) })
 	router.Use(func(next http.Handler) http.Handler { return recoverer(logger, next) })
 

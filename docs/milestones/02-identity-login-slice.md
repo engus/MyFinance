@@ -1,24 +1,56 @@
-# Milestone 2 — demo login slice
+# Milestone 2 — identity, security, and onboarding
 
-This scoped delivery makes the requested development credentials usable without presenting the whole
-Identity milestone as complete.
+This delivery completes the account journey from registration through financial onboarding and
+security management. The earlier demo-login slice remains preserved in Git history.
 
-## Included
+## Delivered
 
-- Normalized email identities and Argon2id password hashes.
-- Random browser session tokens with only their SHA-256 digests stored in PostgreSQL.
-- HttpOnly, SameSite session cookies and server-side logout revocation.
-- Login throttling, strict JSON input bounds, and non-specific invalid-credential errors.
-- Generated OpenAPI/TypeScript/sqlc contracts for login, logout, and current-user lookup.
-- Protected React routes, responsive Calm Ledger sign-in UI, and an explicit logout action.
-- An idempotent development seed for `demo@myfinance.local`.
+- Atomic registration with normalized email and Argon2id password hashing.
+- Random server-side sessions stored only as SHA-256 token digests and delivered via HttpOnly,
+  SameSite cookies.
+- Optional RFC 6238 TOTP with an AES-256-GCM encrypted secret, replay prevention, a five-attempt
+  login challenge, and ten one-use SHA-256-hashed recovery codes.
+- Login and registration throttling, strict JSON bounds, CSRF origin/fetch-metadata checks, security
+  headers, request IDs, structured logs, and persisted authentication audit events.
+- Profile and email editing, password changes that revoke other sessions, session review/revocation,
+  and password-confirmed account deletion.
+- Responsive registration, second-factor login, onboarding, and security/settings UI with all copy
+  in the localisation resource.
+- Atomic onboarding for timezone, functional/display currencies, reconciliation mode, first account,
+  opening balance, and optional monthly income.
+- An isolated PostgreSQL integration database and tests for ownership isolation, duplicate
+  onboarding, encrypted TOTP storage, one-use recovery codes, and deletion cascades.
+- An idempotent development seed for `demo@myfinance.local` plus first-account and income setup
+  data.
 
-## Deferred within Milestone 2
+## Ledger boundary
 
-- Registration and full onboarding.
-- TOTP setup/login, recovery codes, and backup code rotation.
-- Email/password editing, session list/revocation, and account deletion.
-- Durable/distributed rate limits and the full authentication audit trail.
+Onboarding balances and income are stored as explicit setup records with `ledger_posted_at` and
+`materialized_at` markers. Milestone 3 will atomically convert them into immutable opening-balance
+and recurring ledger operations. This prevents a temporary pseudo-ledger from becoming a second
+source of truth.
+
+Functional currency remains editable until the first transaction is posted. The Milestone 3 database
+constraint and service rules will lock it after that point. Durable distributed rate limits are
+deferred until horizontal API scaling is introduced; the current limiter is intentionally process
+local and challenges also enforce a database attempt cap.
+
+## Verification
+
+```sh
+make db-migrate
+make db-migrate-test
+make db-seed
+TEST_DATABASE_URL='postgres://myfinance:myfinance@127.0.0.1:5433/myfinance_test?sslmode=disable' make test
+make ci
+make audit
+```
+
+The demo credentials are `demo@myfinance.local` / `DemoFinance2026!`.
+
+Browser acceptance was run through the real Vite-to-Go proxy at desktop and 390px mobile widths:
+registration, decimal-preserving onboarding, account-class switching, preference updates, session
+listing, logout, and demo login all completed without horizontal overflow or browser console errors.
 
 The final Milestone 2 pull request must complete these items and its original acceptance criteria.
 

@@ -13,10 +13,8 @@ import (
 	"github.com/engus/myfinance/internal/api"
 	passwordauth "github.com/engus/myfinance/internal/auth"
 	"github.com/engus/myfinance/internal/database"
-	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgtype"
-	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
 const (
@@ -67,6 +65,7 @@ func (server *Server) Login(writer http.ResponseWriter, request *http.Request) {
 	if errors.Is(err, pgx.ErrNoRows) {
 		_, _ = passwordauth.VerifyPassword(dummyPasswordHash, password)
 		server.loginLimiter.failed(client, now)
+		writeAuthAudit(request.Context(), queries, request, pgtype.UUID{}, "login_password", false, map[string]string{"reason": "invalid_credentials"})
 		writeError(writer, http.StatusUnauthorized, "invalid_credentials", "Email or password is incorrect.")
 		return
 	}
@@ -84,40 +83,55 @@ func (server *Server) Login(writer http.ResponseWriter, request *http.Request) {
 	}
 	if !valid {
 		server.loginLimiter.failed(client, now)
+		userID, _ := parsePGUUID(row.ID)
+		writeAuthAudit(request.Context(), queries, request, userID, "login_password", false, map[string]string{"reason": "invalid_credentials"})
 		writeError(writer, http.StatusUnauthorized, "invalid_credentials", "Email or password is incorrect.")
 		return
 	}
 
-	token, tokenHash, err := passwordauth.NewSessionToken()
-	if err != nil {
-		Logger(request.Context()).Error("session_token_generation_failed", "error", err)
-		writeError(writer, http.StatusInternalServerError, "internal_error", "An internal error occurred.")
-		return
-	}
-	userID, err := uuid.Parse(row.ID)
+	userID, err := parsePGUUID(row.ID)
 	if err != nil {
 		Logger(request.Context()).Error("login_user_id_invalid", "user_id", row.ID, "error", err)
 		writeError(writer, http.StatusInternalServerError, "internal_error", "An internal error occurred.")
 		return
 	}
 
-	expiresAt := now.Add(server.sessionTTL)
-	userAgent := request.UserAgent()
-	if len(userAgent) > maxUserAgentBytes {
-		userAgent = userAgent[:maxUserAgentBytes]
+	if row.TotpEnabled {
+		challengeToken, challengeHash, err := passwordauth.NewSessionToken()
+		if err != nil {
+			Logger(request.Context()).Error("login_challenge_generation_failed", "error", err)
+			writeError(writer, http.StatusInternalServerError, "internal_error", "An internal error occurred.")
+			return
+		}
+		if err := queries.CreateLoginChallenge(request.Context(), database.CreateLoginChallengeParams{
+			UserID:    userID,
+			TokenHash: challengeHash,
+			ExpiresAt: pgtype.Timestamptz{Time: now.Add(server.loginChallengeTTL), Valid: true},
+		}); err != nil {
+			Logger(request.Context()).Error("login_challenge_create_failed", "user_id", row.ID, "error", err)
+			writeError(writer, http.StatusInternalServerError, "internal_error", "An internal error occurred.")
+			return
+		}
+		server.loginLimiter.succeeded(client)
+		writeAuthAudit(request.Context(), queries, request, userID, "login_password", true, map[string]string{"next": "totp"})
+		writer.Header().Set("Cache-Control", "no-store")
+		writeJSON(writer, http.StatusAccepted, api.LoginChallengeResponse{
+			Status:           api.TotpRequired,
+			ChallengeToken:   challengeToken,
+			ExpiresInSeconds: int(server.loginChallengeTTL.Seconds()),
+		})
+		return
 	}
-	if err := queries.CreateSession(request.Context(), database.CreateSessionParams{
-		UserID:    pgtype.UUID{Bytes: userID, Valid: true},
-		TokenHash: tokenHash,
-		ExpiresAt: pgtype.Timestamptz{Time: expiresAt, Valid: true},
-		UserAgent: pgtype.Text{String: userAgent, Valid: userAgent != ""},
-	}); err != nil {
+
+	token, expiresAt, err := server.createSession(request.Context(), queries, userID, request)
+	if err != nil {
 		Logger(request.Context()).Error("session_create_failed", "user_id", row.ID, "error", err)
 		writeError(writer, http.StatusInternalServerError, "internal_error", "An internal error occurred.")
 		return
 	}
 
 	server.loginLimiter.succeeded(client)
+	writeAuthAudit(request.Context(), queries, request, userID, "login", true, map[string]string{"method": "password"})
 	server.setSessionCookie(writer, token, expiresAt)
 	writer.Header().Set("Cache-Control", "no-store")
 	writeJSON(writer, http.StatusOK, api.AuthResponse{User: apiUser(
@@ -127,7 +141,9 @@ func (server *Server) Login(writer http.ResponseWriter, request *http.Request) {
 		row.Timezone,
 		row.FunctionalCurrency,
 		row.DisplayCurrency,
+		row.ReconciliationMode,
 		row.OnboardingCompleted,
+		false,
 	)})
 }
 
@@ -147,58 +163,13 @@ func (server *Server) Logout(writer http.ResponseWriter, request *http.Request) 
 }
 
 func (server *Server) GetCurrentUser(writer http.ResponseWriter, request *http.Request) {
-	if server.pool == nil {
-		writeError(writer, http.StatusServiceUnavailable, "database_unavailable", "Database is unavailable.")
-		return
-	}
-	cookie, err := request.Cookie(sessionCookieName)
-	if err != nil || cookie.Value == "" {
-		writeError(writer, http.StatusUnauthorized, "authentication_required", "Sign in to continue.")
-		return
-	}
-
-	row, err := database.New(server.pool).GetUserBySession(request.Context(), passwordauth.SessionTokenHash(cookie.Value))
-	if errors.Is(err, pgx.ErrNoRows) {
-		server.clearSessionCookie(writer)
-		writeError(writer, http.StatusUnauthorized, "authentication_required", "Your session expired. Sign in again.")
-		return
-	}
-	if err != nil {
-		Logger(request.Context()).Error("session_lookup_failed", "error", err)
-		writeError(writer, http.StatusInternalServerError, "internal_error", "An internal error occurred.")
+	authenticated, ok := server.requireAuthenticatedSession(writer, request)
+	if !ok {
 		return
 	}
 
 	writer.Header().Set("Cache-Control", "no-store")
-	writeJSON(writer, http.StatusOK, api.AuthResponse{User: apiUser(
-		row.ID,
-		row.Email,
-		row.DisplayName,
-		row.Timezone,
-		row.FunctionalCurrency,
-		row.DisplayCurrency,
-		row.OnboardingCompleted,
-	)})
-}
-
-func apiUser(
-	id string,
-	email string,
-	displayName string,
-	timezone string,
-	functionalCurrency string,
-	displayCurrency string,
-	onboardingCompleted bool,
-) api.User {
-	return api.User{
-		Id:                  uuid.MustParse(id),
-		Email:               openapi_types.Email(email),
-		DisplayName:         displayName,
-		Timezone:            timezone,
-		FunctionalCurrency:  functionalCurrency,
-		DisplayCurrency:     displayCurrency,
-		OnboardingCompleted: onboardingCompleted,
-	}
+	writeJSON(writer, http.StatusOK, api.AuthResponse{User: apiUserFromSession(authenticated.row)})
 }
 
 func normalizeEmail(value string) (string, bool) {

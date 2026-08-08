@@ -23,6 +23,22 @@ export function PublicOnly() {
     return <AuthLoading />;
   }
   if (user) {
+    return <Navigate replace to={user.onboardingCompleted ? "/dashboard" : "/onboarding"} />;
+  }
+  return <Outlet />;
+}
+
+export function RequireCompletedOnboarding() {
+  const { user } = useAuth();
+  if (user && !user.onboardingCompleted) {
+    return <Navigate replace to="/onboarding" />;
+  }
+  return <Outlet />;
+}
+
+export function RequirePendingOnboarding() {
+  const { user } = useAuth();
+  if (user?.onboardingCompleted) {
     return <Navigate replace to="/dashboard" />;
   }
   return <Outlet />;

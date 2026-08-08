@@ -34,7 +34,23 @@ func main() {
 			logger.Warn("worker_dependency_unavailable", "dependency", "database", "error", err)
 			return
 		}
-		logger.Info("worker_cycle_complete", "jobs", 0, "version", settings.Version)
+		queries := database.New(pool)
+		sessionsDeleted, err := queries.DeleteExpiredSessions(checkCtx)
+		if err != nil {
+			logger.Warn("worker_session_cleanup_failed", "error", err)
+			return
+		}
+		challengesDeleted, err := queries.DeleteExpiredLoginChallenges(checkCtx)
+		if err != nil {
+			logger.Warn("worker_challenge_cleanup_failed", "error", err)
+			return
+		}
+		logger.Info(
+			"worker_cycle_complete",
+			"expired_sessions_deleted", sessionsDeleted,
+			"expired_challenges_deleted", challengesDeleted,
+			"version", settings.Version,
+		)
 	}
 
 	logger.Info("worker_started", "environment", settings.Environment, "interval", settings.WorkerInterval.String())
