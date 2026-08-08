@@ -1,6 +1,5 @@
 import type { components } from "./schema.gen";
 
-type HealthResponse = components["schemas"]["HealthResponse"];
 type ErrorEnvelope = components["schemas"]["ErrorEnvelope"];
 export type AuthResponse = components["schemas"]["AuthResponse"];
 export type User = components["schemas"]["User"];
@@ -49,20 +48,6 @@ async function errorFromResponse(response: Response): Promise<ApiError> {
       },
     });
   }
-}
-
-export async function getReadiness(signal?: AbortSignal): Promise<HealthResponse> {
-  const response = await fetch("/api/v1/health/ready", {
-    credentials: "same-origin",
-    headers: { Accept: "application/json" },
-    signal,
-  });
-
-  if (!response.ok) {
-    throw await errorFromResponse(response);
-  }
-
-  return (await response.json()) as HealthResponse;
 }
 
 export async function getCurrentUser(signal?: AbortSignal): Promise<User | null> {

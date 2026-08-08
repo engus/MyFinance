@@ -64,7 +64,6 @@ export const en = {
     title: "Your financial ledger is ready",
     description:
       "Accounts and immutable Cashflow operations are live. Dashboard metrics arrive after reconciliation, assets, and FX are connected.",
-    apiStatus: "API readiness",
     netWorth: "Net worth",
     income: "Monthly income",
     expenses: "Monthly expenses",

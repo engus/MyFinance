@@ -83,7 +83,7 @@ describe("App", () => {
     vi.unstubAllGlobals();
   });
 
-  it("renders the Calm Ledger shell and API readiness", async () => {
+  it("renders the Calm Ledger dashboard without developer-only service status", async () => {
     renderApp();
 
     expect(
@@ -92,7 +92,8 @@ describe("App", () => {
     expect(
       screen.getByRole("heading", { name: "Your financial ledger is ready" }),
     ).toBeInTheDocument();
-    expect(await screen.findByText("vtest")).toBeInTheDocument();
+    expect(screen.queryByText("API readiness")).not.toBeInTheDocument();
+    expect(screen.queryByText("vtest")).not.toBeInTheDocument();
   });
 
   it("renders an explicit empty state for cashflow", async () => {

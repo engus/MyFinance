@@ -652,16 +652,6 @@ a {
   min-height: 190px;
 }
 
-.health-panel {
-  min-width: 260px;
-  display: grid;
-  gap: 10px;
-  padding: 16px;
-  border: 1px solid var(--color-line);
-  border-radius: 14px;
-  background: color-mix(in srgb, var(--color-surface) 88%, transparent);
-}
-
 .inline-state {
   display: flex;
   align-items: center;
@@ -1645,10 +1635,6 @@ a {
     display: grid;
     align-items: start;
     padding: 22px;
-  }
-
-  .health-panel {
-    min-width: 0;
   }
 
   .dashboard-grid {
